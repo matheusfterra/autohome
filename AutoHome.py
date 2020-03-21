@@ -31,7 +31,6 @@ class MyWin(QtWidgets.QMainWindow):
 
         # Apresenta Aba aberta
         print(self.get_tab())
-        print("teste")
 
         # Funcao Data Atual
         self.minha_data()
