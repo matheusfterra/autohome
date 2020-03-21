@@ -1,0 +1,4 @@
+eixo_x_aux=eixo_x[:]
+                eixo_x = np.zeros((1, len(eixo_x_aux)+1), dtype='<U19')
+                for jj in range(0,len(eixo_x_aux)):
+                    eixo_x[0][jj]=eixo_x_aux[0][jj]

@@ -1,0 +1,22 @@
+Quando aperto para ligar o ar, dá erro de index.
+
+Date/Time:
+https://www.alura.com.br/artigos/lidando-com-datas-e-horarios-no-python
+
+Interrupt:
+https://www.raspberrypi.org/forums/viewtopic.php?t=205511
+
+how embeed matplot in pyqt5 python:
+https://www.google.com/search?q=how+embeed+matplot+in+pyqt5+python&oq=how+embeed+matplot+in+pyqt5+python&aqs=chrome..69i57.7409j0j7&sourceid=chrome&ie=UTF-8
+
+
+Plotando Gráficos no Python:
+https://www.geeksforgeeks.org/graph-plotting-in-python-set-1/
+
+https://yapayzekalabs.blogspot.com/2018/11/pyqt5-gui-qt-designer-matplotlib.html
+
+https://stackoverflow.com/questions/43947318/plotting-matplotlib-figure-inside-qwidget-using-qt-designer-form-and-pyqt5
+
+BACKUP/RESTAURAÇÂO BD
+https://john-dugan.com/dump-and-restore-mysql-databases-in-windows/
+https://tecadmin.net/python-script-for-mysql-database-backup/

@@ -1,0 +1,6 @@
+data_obj = datetime.strptime(mac_temperatura_ar[0][2], '%Y-%m-%d %H:%M:%S') #Converto em Objeto Data
+                    data_somada=(data_obj+ timedelta(seconds=15)).strftime('%H:%M:%S') #Faço o Somatorio de TIMES e converto para STRING
+                    data_off=datetime.strptime(data_somada, '%H:%M:%S') #Converto novamente para OBJETO
+
+                    data_atual=datetime.strptime(mac_temperatura_ar[n][2], '%Y-%m-%d %H:%M:%S').strftime('%H:%M:%S')
+                    data_in=datetime.strptime(data_atual, '%H:%M:%S')
