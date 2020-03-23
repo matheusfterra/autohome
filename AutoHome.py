@@ -18,10 +18,12 @@ from operator import itemgetter
 import sys
 from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT as NavigationToolbar)
 import random
+import serial
 
 teste_conexao = 0
 botao_info = False
-
+#Conexao com a porta SERIAL
+serial_port = serial.Serial('COM6', 9600)
 
 class MyWin(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
@@ -122,7 +124,7 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.label_3.setText("Pressionado!")
 
     def sair(self):
-
+        serial_port.close()
         window.destroy()
         sys.exit(app.exec_())
 
@@ -943,6 +945,7 @@ class MyWin(QtWidgets.QMainWindow):
                 teste_conexao = 1
 
     def update_estado_iluminacao_on(self):
+        self.led_on_off("on")
         teste_conexao = 0
 
         data_atual = datetime.now()
@@ -993,6 +996,7 @@ class MyWin(QtWidgets.QMainWindow):
                 teste_conexao = 1
 
     def update_estado_iluminacao_off(self):
+        self.led_on_off("off")
         teste_conexao = 0
 
         data_atual = datetime.now()
@@ -3353,6 +3357,15 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.MplWidget_2.canvas.axes.set_xlabel('Horário')
         self.ui.MplWidget_2.canvas.axes.grid()
         self.ui.MplWidget_2.canvas.draw()
+
+    def led_on_off(self, input):
+        if input =="on":
+            print("LED is on...")
+            serial_port.write(b'1')
+        elif input =="off":
+            print("LED is off...")
+            serial_port.write(b'0')
+
 
 
 if __name__ == "__main__":
