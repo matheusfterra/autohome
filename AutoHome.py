@@ -3379,8 +3379,9 @@ class MyWin(QtWidgets.QMainWindow):
     def temp_umid(self):
         serial_port.write(b't')
         serial_port.flush()
-        data = serial_port.readline().decode('utf-8')
-        return(data)
+        data1 = serial_port.readline().decode('utf-8')
+        data2 = serial_port.readline().decode('utf-8')
+        return(data1,data2)
 
     #Intensidade Luminosa
     def luximetro(self):
@@ -3449,11 +3450,19 @@ class MyWin(QtWidgets.QMainWindow):
 
     #Agentes
     def agente_recepcao(self):
-        serial_port.write(b'p')
-        serial_port.flush()
-        data1 = serial_port.readline().decode('utf-8')
-        data2 = serial_port.readline().decode('utf-8')
-        return (data2)
+        # serial_port.write(b'p')
+        # serial_port.flush()
+        # data1 = serial_port.readline().decode('utf-8')
+        # data2 = serial_port.readline().decode('utf-8')
+        # return (data2)
+        temperatura,umidade=self.temp_umid()
+        if temperatura !='' and umidade!='':
+            #Chama agente de temperatura e umidade
+            return
+
+    def agente_gerente(self):
+        return
+
 
 
 if __name__ == "__main__":
