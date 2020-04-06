@@ -89,8 +89,6 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.check_Controle.stateChanged.connect(self.update_Controle)
         self.ui.btn_tendencia.clicked.connect(self.update_Tendencia)
 
-        # Chama Machine Learn
-        self.machine_learning()
 
         #Chama agente gerente
         self.agente_gerente()
@@ -1180,8 +1178,11 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setWindowTitle("Ar Desligado")
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
+
+                conexao.close()
             else:
                 self.temp_mais_ar()
+
                 valor = int(self.ui.text_temp_ar.text()) + 1
                 self.ui.text_temp_ar.setText(str(valor))
                 teste_conexao = 0
@@ -1194,8 +1195,11 @@ class MyWin(QtWidgets.QMainWindow):
                 cursor.execute("UPDATE configuracao_user SET temp_ar=%s WHERE id=1", valor)
                 valor = True
 
-                cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)",
-                               (acao, valor, data_db))
+                #Verifica Acionamento da aprendizagem
+                aprendizagem = self.check_aprendizagem()
+                if aprendizagem == True:
+                    cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)",
+                                   (acao, valor, data_db))
                 conexao.close()
 
             # Caso a Conexão dê errado:
@@ -1237,6 +1241,8 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setWindowTitle("Ar Desligado")
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
+
+                conexao.close()
             else:
                 self.temp_menos_ar()
                 valor = int(self.ui.text_temp_ar.text()) - 1
@@ -1253,9 +1259,12 @@ class MyWin(QtWidgets.QMainWindow):
 
                 valor = False
 
-                # Executa o comando:
-                cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)",
-                               (acao, valor, data_db))
+                # Verifica Acionamento da aprendizagem
+                aprendizagem = self.check_aprendizagem()
+                if aprendizagem == True:
+                    # Executa o comando:
+                    cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)",
+                                   (acao, valor, data_db))
                 conexao.close()
 
 
@@ -1299,6 +1308,8 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setWindowTitle("TV Desligada")
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
+
+                conexao.close()
             else:
                 self.vol_mais_tv()
                 valor = int(self.ui.text_vol.text()) + 1
@@ -1359,6 +1370,8 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setWindowTitle("TV Desligada")
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
+
+                conexao.close()
             else:
                 self.vol_menos_tv()
                 valor = int(self.ui.text_vol.text()) - 1
@@ -1419,6 +1432,8 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setWindowTitle("TV Desligada")
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
+
+                conexao.close()
             else:
                 self.canal_mais_tv()
                 valor = int(self.ui.text_canal.text()) + 1
@@ -1479,6 +1494,8 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setWindowTitle("TV Desligada")
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
+
+                conexao.close()
             else:
                 self.canal_menos_tv()
                 valor = int(self.ui.text_canal.text()) - 1
@@ -1539,6 +1556,8 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setWindowTitle("Ar Desligado")
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
+
+                conexao.close()
             else:
                 self.modo_ar()
                 # Valor False=Normal | True=Turbo
@@ -1559,9 +1578,12 @@ class MyWin(QtWidgets.QMainWindow):
                 # Executa o comando:
                 cursor.execute("UPDATE configuracao_user SET modo_ar=%s WHERE id=1", valor)
 
-                # Executa o comando:
-                cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)",
-                               (acao, valor, data_db))
+                # Verifica Acionamento da aprendizagem
+                aprendizagem = self.check_aprendizagem()
+                if aprendizagem == True:
+                    # Executa o comando:
+                    cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)",
+                                   (acao, valor, data_db))
                 conexao.close()
 
 
@@ -1604,8 +1626,11 @@ class MyWin(QtWidgets.QMainWindow):
             # Executa o comando:
             cursor.execute("UPDATE configuracao_user SET ar_condicionado=%s WHERE id=1", valor)
 
-            # Executa o comando:
-            cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)", (acao, valor, data_db))
+            # Verifica Acionamento da aprendizagem
+            aprendizagem = self.check_aprendizagem()
+            if aprendizagem == True:
+                # Executa o comando:
+                cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)", (acao, valor, data_db))
             conexao.close()
 
         # Caso a Conexão dê errado:
@@ -1700,6 +1725,10 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
                 teste_conexao = 1
+
+        aprendizagem=self.check_aprendizagem()
+        if aprendizagem==True:
+            self.machine_learning()
 
     def update_Economia(self):
         valor = self.ui.check_Economia.checkState()
@@ -3439,6 +3468,46 @@ class MyWin(QtWidgets.QMainWindow):
         tt = threading.Timer(1, self.apresenta_parametros)
         tt.start()
 
+    def check_aprendizagem(self):
+        #Checagem para chamar Machine Learning
+        teste_conexao = 0
+        try:
+            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+            # Cria um cursor:
+            cursor = conexao.cursor()
+            # Executa o comando:
+            cursor.execute("SELECT aprendizagem FROM configuracao_user  WHERE id=1")
+
+            # Recupera o resultado:
+            resultado = cursor.fetchall()
+            if cursor.rowcount > 0:
+                for linha in resultado:
+                    aprendizagem = linha[0]
+
+            if aprendizagem==True:
+                self.ui.txt_modo_aprendizagem.setText("Modo Aprendizagem Habilitado")
+            else:
+                self.ui.txt_modo_aprendizagem.setText("Modo Aprendizagem Desabilitado")
+
+            return aprendizagem
+
+
+        except pymysql.err.OperationalError as e:
+            if teste_conexao == 0:
+                print("Error while connecting to MySQL", e)
+
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
+
+                msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                msg.setWindowTitle("Erro na Inicialização")
+                msg.setDetailedText(
+                    "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+                teste_conexao = 1
+
     #Agentes
     def agente_recepcao(self, modo):
         if modo=="temp_amb":
@@ -3450,6 +3519,9 @@ class MyWin(QtWidgets.QMainWindow):
 
     def agente_gerente(self):
         self.apresenta_parametros()
+        aprendizagem=self.check_aprendizagem()
+        if aprendizagem==True:
+            self.machine_learning()
         #return
 
 

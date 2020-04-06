@@ -521,6 +521,14 @@ class Ui_MainWindow(object):
         self.data_2.setFont(font)
         self.data_2.setAlignment(QtCore.Qt.AlignCenter)
         self.data_2.setObjectName("data_2")
+        self.txt_modo_aprendizagem = QtWidgets.QLabel(self.tab_4)
+        self.txt_modo_aprendizagem.setGeometry(QtCore.QRect(240, 70, 741, 21))
+        font = QtGui.QFont()
+        font.setFamily("Arial")
+        font.setPointSize(12)
+        self.txt_modo_aprendizagem.setFont(font)
+        self.txt_modo_aprendizagem.setAlignment(QtCore.Qt.AlignCenter)
+        self.txt_modo_aprendizagem.setObjectName("txt_modo_aprendizagem")
         self.tabWidget.addTab(self.tab_4, "")
         MainWindow.setCentralWidget(self.centralwidget)
 
@@ -660,5 +668,6 @@ class Ui_MainWindow(object):
         self.comboBox_3.setItemText(3, _translate("MainWindow", "Temperatura -"))
         self.label_21.setText(_translate("MainWindow", "Curva de Aprendizagem"))
         self.data_2.setText(_translate("MainWindow", "Entre na aba Configurações, para alterar a Taxa de Tendência."))
+        self.txt_modo_aprendizagem.setText(_translate("MainWindow", "Modo Aprendizagem Ligado"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), _translate("MainWindow", "Aprendizagem"))
 from mplwidget import MplWidget
