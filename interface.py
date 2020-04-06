@@ -483,12 +483,12 @@ class Ui_MainWindow(object):
         self.MplWidget_2 = MplWidget(self.verticalLayoutWidget_2)
         self.MplWidget_2.setObjectName("MplWidget_2")
         self.comboBox_2 = QtWidgets.QComboBox(self.MplWidget_2)
-        self.comboBox_2.setGeometry(QtCore.QRect(330, 500, 141, 31))
+        self.comboBox_2.setGeometry(QtCore.QRect(390, 490, 141, 31))
         self.comboBox_2.setObjectName("comboBox_2")
         self.comboBox_2.addItem("")
         self.comboBox_2.addItem("")
         self.comboBox_Dia_2 = QtWidgets.QComboBox(self.MplWidget_2)
-        self.comboBox_Dia_2.setGeometry(QtCore.QRect(480, 500, 141, 31))
+        self.comboBox_Dia_2.setGeometry(QtCore.QRect(540, 490, 141, 31))
         self.comboBox_Dia_2.setObjectName("comboBox_Dia_2")
         self.comboBox_Dia_2.addItem("")
         self.comboBox_Dia_2.addItem("")
@@ -498,7 +498,7 @@ class Ui_MainWindow(object):
         self.comboBox_Dia_2.addItem("")
         self.comboBox_Dia_2.addItem("")
         self.comboBox_3 = QtWidgets.QComboBox(self.MplWidget_2)
-        self.comboBox_3.setGeometry(QtCore.QRect(630, 500, 191, 31))
+        self.comboBox_3.setGeometry(QtCore.QRect(690, 490, 191, 31))
         self.comboBox_3.setObjectName("comboBox_3")
         self.comboBox_3.addItem("")
         self.comboBox_3.addItem("")
@@ -525,7 +525,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(3)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):

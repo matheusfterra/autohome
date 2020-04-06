@@ -23,7 +23,7 @@ import serial
 teste_conexao = 0
 botao_info = False
 #Conexao com a porta SERIAL
-serial_port = serial.Serial('COM8', 9600)
+serial_port = serial.Serial('COM8', baudrate = 9600, writeTimeout = 0)
 
 class MyWin(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
@@ -1053,70 +1053,152 @@ class MyWin(QtWidgets.QMainWindow):
 
     def update_temp(self):
         valor = self.ui.txt_temp.toPlainText()
-        teste_conexao = 0
-
-        try:
-            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-
-            # Cria um cursor:
-            cursor = conexao.cursor()
-
-            # Executa o comando:
-            cursor.execute("UPDATE configuracao_user SET temperatura=%s WHERE id=1", valor)
-            conexao.close()
-
+        if valor=="":
             msg = QMessageBox()
-            msg.setIcon(QMessageBox.Information)
+            msg.setIcon(QMessageBox.Critical)
 
-            msg.setText(".::Dado Salvo com Sucesso::.")
-            msg.setInformativeText("Sua Temperatura foi Alterada!")
-            msg.setWindowTitle("Sucesso!")
-
+            msg.setText(".::Erro de Valor::.")
+            msg.setInformativeText("Falha na Comunicação com o Servidor!")
+            msg.setWindowTitle("Erro na Inicialização")
+            msg.setDetailedText(
+                "A temperatura não pode ser vazia!")
             msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
             msg.exec_()
+        else:
+            teste_conexao = 0
 
-        # Caso a Conexão dê errado:
-        except pymysql.err.OperationalError as e:
-            if teste_conexao == 0:
-                print("Error while connecting to MySQL", e)
+            try:
+                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+
+                # Cria um cursor:
+                cursor = conexao.cursor()
+
+                # Executa o comando:
+                cursor.execute("UPDATE configuracao_user SET temperatura=%s WHERE id=1", valor)
+                conexao.close()
 
                 msg = QMessageBox()
-                msg.setIcon(QMessageBox.Critical)
+                msg.setIcon(QMessageBox.Information)
 
-                msg.setText(".::Erro de Conexão com o Banco de Dados::.")
-                msg.setInformativeText("Falha na Comunicação com o Servidor!")
-                msg.setWindowTitle("Erro na Inicialização")
-                msg.setDetailedText(
-                    "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setText(".::Dado Salvo com Sucesso::.")
+                msg.setInformativeText("Sua Temperatura foi Alterada!")
+                msg.setWindowTitle("Sucesso!")
+
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
-                teste_conexao = 1
+
+            # Caso a Conexão dê errado:
+            except pymysql.err.OperationalError as e:
+                if teste_conexao == 0:
+                    print("Error while connecting to MySQL", e)
+
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Critical)
+
+                    msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                    msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                    msg.setWindowTitle("Erro na Inicialização")
+                    msg.setDetailedText(
+                        "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                    msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                    msg.exec_()
+                    teste_conexao = 1
 
     def update_temp_banho(self):
         valor = self.ui.txt_temp_agua.toPlainText()
-        teste_conexao = 0
+        if valor=="":
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Critical)
+
+            msg.setText(".::Erro de Valor::.")
+            msg.setInformativeText("Falha na Comunicação com o Servidor!")
+            msg.setWindowTitle("Erro na Inicialização")
+            msg.setDetailedText(
+                "A temperatura não pode ser vazia!")
+            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            msg.exec_()
+        else:
+            teste_conexao = 0
+
+            try:
+                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+
+                # Cria um cursor:
+                cursor = conexao.cursor()
+
+                # Executa o comando:
+                cursor.execute("UPDATE configuracao_user SET temp_banho=%s WHERE id=1", valor)
+                conexao.close()
+
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Information)
+
+                msg.setText(".::Dado Salvo com Sucesso::.")
+                msg.setInformativeText("Sua Temperatura do Banho foi Alterada!")
+                msg.setWindowTitle("Sucesso!")
+
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+
+            # Caso a Conexão dê errado:
+            except pymysql.err.OperationalError as e:
+                if teste_conexao == 0:
+                    print("Error while connecting to MySQL", e)
+
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Critical)
+
+                    msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                    msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                    msg.setWindowTitle("Erro na Inicialização")
+                    msg.setDetailedText(
+                        "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                    msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                    msg.exec_()
+                    teste_conexao = 1
+
+    def update_temp_ar_mais(self):
 
         try:
             conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-
             # Cria um cursor:
             cursor = conexao.cursor()
-
             # Executa o comando:
-            cursor.execute("UPDATE configuracao_user SET temp_banho=%s WHERE id=1", valor)
-            conexao.close()
+            cursor.execute("SELECT ar_condicionado FROM configuracao_user  WHERE id=1")
 
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Information)
+            # Recupera o resultado:
+            resultado = cursor.fetchall()
+            if cursor.rowcount > 0:
+                for linha in resultado:
+                    ar_ligado = linha[0]
+            if ar_ligado == False:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
 
-            msg.setText(".::Dado Salvo com Sucesso::.")
-            msg.setInformativeText("Sua Temperatura do Banho foi Alterada!")
-            msg.setWindowTitle("Sucesso!")
+                msg.setText(".::Error::.")
+                msg.setInformativeText("O Ar Condicionado se Encontra Desligado")
+                msg.setWindowTitle("Ar Desligado")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+            else:
+                self.temp_mais_ar()
+                valor = int(self.ui.text_temp_ar.text()) + 1
+                self.ui.text_temp_ar.setText(str(valor))
+                teste_conexao = 0
+                data_atual = datetime.now()
+                data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
+                # Ação e Valor que recebe
+                acao = "Temperatura-Ar-Mais"
 
-            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            msg.exec_()
+                # Executa o comando:
+                cursor.execute("UPDATE configuracao_user SET temp_ar=%s WHERE id=1", valor)
+                valor = True
 
-        # Caso a Conexão dê errado:
+                cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)",
+                               (acao, valor, data_db))
+                conexao.close()
+
+            # Caso a Conexão dê errado:
         except pymysql.err.OperationalError as e:
             if teste_conexao == 0:
                 print("Error while connecting to MySQL", e)
@@ -1127,126 +1209,50 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setText(".::Erro de Conexão com o Banco de Dados::.")
                 msg.setInformativeText("Falha na Comunicação com o Servidor!")
                 msg.setWindowTitle("Erro na Inicialização")
-                msg.setDetailedText(
-                    "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setDetailedText("Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
                 teste_conexao = 1
 
-    def update_temp_ar_mais(self):
-
-        conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-        # Cria um cursor:
-        cursor = conexao.cursor()
-        # Executa o comando:
-        cursor.execute("SELECT ar_condicionado FROM configuracao_user  WHERE id=1")
-
-        # Recupera o resultado:
-        resultado = cursor.fetchall()
-        if cursor.rowcount > 0:
-            for linha in resultado:
-                ar_ligado = linha[0]
-        if ar_ligado == False:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Critical)
-
-            msg.setText(".::Error::.")
-            msg.setInformativeText("O Ar Condicionado se Encontra Desligado")
-            msg.setWindowTitle("Ar Desligado")
-            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            msg.exec_()
-        else:
-
-            valor = int(self.ui.text_temp_ar.text()) + 1
-            self.ui.text_temp_ar.setText(str(valor))
-            teste_conexao = 0
-
-            data_atual = datetime.now()
-            data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
-            # Ação e Valor que recebe
-            acao = "Temperatura-Ar-Mais"
-
-            try:
-                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-                # Cria um cursor:
-                cursor = conexao.cursor()
-                # Executa o comando:
-                cursor.execute("UPDATE configuracao_user SET temp_ar=%s WHERE id=1", valor)
-                conexao.close()
-
-                valor = True
-
-                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-                # Cria um cursor:
-                cursor = conexao.cursor()
-                # Executa o comando:
-                cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)",
-                               (acao, valor, data_db))
-                conexao.close()
-
-
-            # Caso a Conexão dê errado:
-            except pymysql.err.OperationalError as e:
-                if teste_conexao == 0:
-                    print("Error while connecting to MySQL", e)
-
-                    msg = QMessageBox()
-                    msg.setIcon(QMessageBox.Critical)
-
-                    msg.setText(".::Erro de Conexão com o Banco de Dados::.")
-                    msg.setInformativeText("Falha na Comunicação com o Servidor!")
-                    msg.setWindowTitle("Erro na Inicialização")
-                    msg.setDetailedText(
-                        "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
-                    msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-                    msg.exec_()
-                    teste_conexao = 1
-
     def update_temp_ar_menos(self):
-        conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-        # Cria um cursor:
-        cursor = conexao.cursor()
-        # Executa o comando:
-        cursor.execute("SELECT ar_condicionado FROM configuracao_user  WHERE id=1")
 
-        # Recupera o resultado:
-        resultado = cursor.fetchall()
-        if cursor.rowcount > 0:
-            for linha in resultado:
-                ar_ligado = linha[0]
-        if ar_ligado == False:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Critical)
+        try:
+            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+            # Cria um cursor:
+            cursor = conexao.cursor()
+            # Executa o comando:
+            cursor.execute("SELECT ar_condicionado FROM configuracao_user  WHERE id=1")
 
-            msg.setText(".::Error::.")
-            msg.setInformativeText("O Ar Condicionado se Encontra Desligado")
-            msg.setWindowTitle("Ar Desligado")
-            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            msg.exec_()
-        else:
+            # Recupera o resultado:
+            resultado = cursor.fetchall()
+            if cursor.rowcount > 0:
+                for linha in resultado:
+                    ar_ligado = linha[0]
+            if ar_ligado == False:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
 
-            valor = int(self.ui.text_temp_ar.text()) - 1
-            self.ui.text_temp_ar.setText(str(valor))
-            teste_conexao = 0
+                msg.setText(".::Error::.")
+                msg.setInformativeText("O Ar Condicionado se Encontra Desligado")
+                msg.setWindowTitle("Ar Desligado")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+            else:
+                self.temp_menos_ar()
+                valor = int(self.ui.text_temp_ar.text()) - 1
+                self.ui.text_temp_ar.setText(str(valor))
+                teste_conexao = 0
 
-            data_atual = datetime.now()
-            data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
-            # Ação e Valor que recebe
-            acao = "Temperatura-Ar-Menos"
+                data_atual = datetime.now()
+                data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
+                # Ação e Valor que recebe
+                acao = "Temperatura-Ar-Menos"
 
-            try:
-                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-                # Cria um cursor:
-                cursor = conexao.cursor()
                 # Executa o comando:
                 cursor.execute("UPDATE configuracao_user SET temp_ar=%s WHERE id=1", valor)
-                conexao.close()
 
                 valor = False
 
-                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-                # Cria um cursor:
-                cursor = conexao.cursor()
                 # Executa o comando:
                 cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)",
                                (acao, valor, data_db))
@@ -1255,336 +1261,304 @@ class MyWin(QtWidgets.QMainWindow):
 
 
             # Caso a Conexão dê errado:
-            except pymysql.err.OperationalError as e:
-                if teste_conexao == 0:
-                    print("Error while connecting to MySQL", e)
+        except pymysql.err.OperationalError as e:
+            if teste_conexao == 0:
+                print("Error while connecting to MySQL", e)
 
-                    msg = QMessageBox()
-                    msg.setIcon(QMessageBox.Critical)
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
 
-                    msg.setText(".::Erro de Conexão com o Banco de Dados::.")
-                    msg.setInformativeText("Falha na Comunicação com o Servidor!")
-                    msg.setWindowTitle("Erro na Inicialização")
-                    msg.setDetailedText(
-                        "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
-                    msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-                    msg.exec_()
-                    teste_conexao = 1
+                msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                msg.setWindowTitle("Erro na Inicialização")
+                msg.setDetailedText("Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+                teste_conexao = 1
 
     def update_volume_mais(self):
-        conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-        # Cria um cursor:
-        cursor = conexao.cursor()
-        # Executa o comando:
-        cursor.execute("SELECT televisao FROM configuracao_user  WHERE id=1")
 
-        # Recupera o resultado:
-        resultado = cursor.fetchall()
-        if cursor.rowcount > 0:
-            for linha in resultado:
-                tv_ligada = linha[0]
-        if tv_ligada == False:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Critical)
+        try:
+            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+            # Cria um cursor:
+            cursor = conexao.cursor()
+            # Executa o comando:
+            cursor.execute("SELECT televisao FROM configuracao_user  WHERE id=1")
 
-            msg.setText(".::Error::.")
-            msg.setInformativeText("A Televisão se Encontra Desligada")
-            msg.setWindowTitle("TV Desligada")
-            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            msg.exec_()
-        else:
+            # Recupera o resultado:
+            resultado = cursor.fetchall()
+            if cursor.rowcount > 0:
+                for linha in resultado:
+                    tv_ligada = linha[0]
+            if tv_ligada == False:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
 
-            valor = int(self.ui.text_vol.text()) + 1
-            self.ui.text_vol.setText(str(valor))
-            teste_conexao = 0
+                msg.setText(".::Error::.")
+                msg.setInformativeText("A Televisão se Encontra Desligada")
+                msg.setWindowTitle("TV Desligada")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+            else:
+                self.vol_mais_tv()
+                valor = int(self.ui.text_vol.text()) + 1
+                self.ui.text_vol.setText(str(valor))
+                teste_conexao = 0
 
-            data_atual = datetime.now()
-            data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
-            # Ação e Valor que recebe
-            acao = "Volume-Tv"
+                data_atual = datetime.now()
+                data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
+                # Ação e Valor que recebe
+                acao = "Volume-Tv"
 
-            try:
-                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-                # Cria um cursor:
-                cursor = conexao.cursor()
                 # Executa o comando:
                 cursor.execute("UPDATE configuracao_user SET volume_tv=%s WHERE id=1", valor)
-                conexao.close()
 
                 valor = True
 
-                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-                # Cria um cursor:
-                cursor = conexao.cursor()
                 # Executa o comando:
                 cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)",
                                (acao, valor, data_db))
                 conexao.close()
 
             # Caso a Conexão dê errado:
-            except pymysql.err.OperationalError as e:
-                if teste_conexao == 0:
-                    print("Error while connecting to MySQL", e)
+        except pymysql.err.OperationalError as e:
+            if teste_conexao == 0:
+                print("Error while connecting to MySQL", e)
 
-                    msg = QMessageBox()
-                    msg.setIcon(QMessageBox.Critical)
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
 
-                    msg.setText(".::Erro de Conexão com o Banco de Dados::.")
-                    msg.setInformativeText("Falha na Comunicação com o Servidor!")
-                    msg.setWindowTitle("Erro na Inicialização")
-                    msg.setDetailedText(
-                        "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
-                    msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-                    msg.exec_()
-                    teste_conexao = 1
+                msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                msg.setWindowTitle("Erro na Inicialização")
+                msg.setDetailedText("Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+                teste_conexao = 1
 
     def update_volume_menos(self):
-        conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-        # Cria um cursor:
-        cursor = conexao.cursor()
-        # Executa o comando:
-        cursor.execute("SELECT televisao FROM configuracao_user  WHERE id=1")
 
-        # Recupera o resultado:
-        resultado = cursor.fetchall()
-        if cursor.rowcount > 0:
-            for linha in resultado:
-                tv_ligada = linha[0]
-        if tv_ligada == False:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Critical)
+        try:
+            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+            # Cria um cursor:
+            cursor = conexao.cursor()
+            # Executa o comando:
+            cursor.execute("SELECT televisao FROM configuracao_user  WHERE id=1")
 
-            msg.setText(".::Error::.")
-            msg.setInformativeText("A Televisão se Encontra Desligada")
-            msg.setWindowTitle("TV Desligada")
-            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            msg.exec_()
-        else:
-            valor = int(self.ui.text_vol.text()) - 1
-            self.ui.text_vol.setText(str(valor))
-            teste_conexao = 0
+            # Recupera o resultado:
+            resultado = cursor.fetchall()
+            if cursor.rowcount > 0:
+                for linha in resultado:
+                    tv_ligada = linha[0]
+            if tv_ligada == False:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
 
-            data_atual = datetime.now()
-            data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
-            # Ação e Valor que recebe
-            acao = "Volume-Tv"
+                msg.setText(".::Error::.")
+                msg.setInformativeText("A Televisão se Encontra Desligada")
+                msg.setWindowTitle("TV Desligada")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+            else:
+                self.vol_menos_tv()
+                valor = int(self.ui.text_vol.text()) - 1
+                self.ui.text_vol.setText(str(valor))
+                teste_conexao = 0
 
-            try:
-                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-                # Cria um cursor:
-                cursor = conexao.cursor()
+                data_atual = datetime.now()
+                data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
+                # Ação e Valor que recebe
+                acao = "Volume-Tv"
+
                 # Executa o comando:
                 cursor.execute("UPDATE configuracao_user SET volume_tv=%s WHERE id=1", valor)
-                conexao.close()
 
                 valor = False
 
-                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-                # Cria um cursor:
-                cursor = conexao.cursor()
                 # Executa o comando:
                 cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)",
                                (acao, valor, data_db))
                 conexao.close()
 
             # Caso a Conexão dê errado:
-            except pymysql.err.OperationalError as e:
-                if teste_conexao == 0:
-                    print("Error while connecting to MySQL", e)
+        except pymysql.err.OperationalError as e:
+            if teste_conexao == 0:
+                print("Error while connecting to MySQL", e)
 
-                    msg = QMessageBox()
-                    msg.setIcon(QMessageBox.Critical)
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
 
-                    msg.setText(".::Erro de Conexão com o Banco de Dados::.")
-                    msg.setInformativeText("Falha na Comunicação com o Servidor!")
-                    msg.setWindowTitle("Erro na Inicialização")
-                    msg.setDetailedText(
-                        "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
-                    msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-                    msg.exec_()
-                    teste_conexao = 1
+                msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                msg.setWindowTitle("Erro na Inicialização")
+                msg.setDetailedText("Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+                teste_conexao = 1
 
     def update_canal_mais(self):
-        conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-        # Cria um cursor:
-        cursor = conexao.cursor()
-        # Executa o comando:
-        cursor.execute("SELECT televisao FROM configuracao_user  WHERE id=1")
 
-        # Recupera o resultado:
-        resultado = cursor.fetchall()
-        if cursor.rowcount > 0:
-            for linha in resultado:
-                tv_ligada = linha[0]
-        if tv_ligada == False:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Critical)
+        try:
+            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+            # Cria um cursor:
+            cursor = conexao.cursor()
+            # Executa o comando:
+            cursor.execute("SELECT televisao FROM configuracao_user  WHERE id=1")
 
-            msg.setText(".::Error::.")
-            msg.setInformativeText("A Televisão se Encontra Desligada")
-            msg.setWindowTitle("TV Desligada")
-            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            msg.exec_()
-        else:
-            valor = int(self.ui.text_canal.text()) + 1
-            self.ui.text_canal.setText(str(valor))
-            teste_conexao = 0
+            # Recupera o resultado:
+            resultado = cursor.fetchall()
+            if cursor.rowcount > 0:
+                for linha in resultado:
+                    tv_ligada = linha[0]
+            if tv_ligada == False:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
 
-            data_atual = datetime.now()
-            data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
-            # Ação e Valor que recebe
-            acao = "Canal-Tv"
+                msg.setText(".::Error::.")
+                msg.setInformativeText("A Televisão se Encontra Desligada")
+                msg.setWindowTitle("TV Desligada")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+            else:
+                self.canal_mais_tv()
+                valor = int(self.ui.text_canal.text()) + 1
+                self.ui.text_canal.setText(str(valor))
+                teste_conexao = 0
 
-            try:
-                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-                # Cria um cursor:
-                cursor = conexao.cursor()
+                data_atual = datetime.now()
+                data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
+                # Ação e Valor que recebe
+                acao = "Canal-Tv"
+
                 # Executa o comando:
                 cursor.execute("UPDATE configuracao_user SET canais_tv=%s WHERE id=1", valor)
-                conexao.close()
 
                 valor = True
 
-                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-                # Cria um cursor:
-                cursor = conexao.cursor()
                 # Executa o comando:
                 cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)",
                                (acao, valor, data_db))
                 conexao.close()
 
             # Caso a Conexão dê errado:
-            except pymysql.err.OperationalError as e:
-                if teste_conexao == 0:
-                    print("Error while connecting to MySQL", e)
+        except pymysql.err.OperationalError as e:
+            if teste_conexao == 0:
+                print("Error while connecting to MySQL", e)
 
-                    msg = QMessageBox()
-                    msg.setIcon(QMessageBox.Critical)
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
 
-                    msg.setText(".::Erro de Conexão com o Banco de Dados::.")
-                    msg.setInformativeText("Falha na Comunicação com o Servidor!")
-                    msg.setWindowTitle("Erro na Inicialização")
-                    msg.setDetailedText(
-                        "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
-                    msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-                    msg.exec_()
-                    teste_conexao = 1
+                msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                msg.setWindowTitle("Erro na Inicialização")
+                msg.setDetailedText("Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+                teste_conexao = 1
 
     def update_canal_menos(self):
-        conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-        # Cria um cursor:
-        cursor = conexao.cursor()
-        # Executa o comando:
-        cursor.execute("SELECT televisao FROM configuracao_user  WHERE id=1")
 
-        # Recupera o resultado:
-        resultado = cursor.fetchall()
-        if cursor.rowcount > 0:
-            for linha in resultado:
-                tv_ligada = linha[0]
-        if tv_ligada == False:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Critical)
+        try:
+            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+            # Cria um cursor:
+            cursor = conexao.cursor()
+            # Executa o comando:
+            cursor.execute("SELECT televisao FROM configuracao_user  WHERE id=1")
 
-            msg.setText(".::Error::.")
-            msg.setInformativeText("A Televisão se Encontra Desligada")
-            msg.setWindowTitle("TV Desligada")
-            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            msg.exec_()
-        else:
-            valor = int(self.ui.text_canal.text()) - 1
-            self.ui.text_canal.setText(str(valor))
-            teste_conexao = 0
+            # Recupera o resultado:
+            resultado = cursor.fetchall()
+            if cursor.rowcount > 0:
+                for linha in resultado:
+                    tv_ligada = linha[0]
+            if tv_ligada == False:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
 
-            data_atual = datetime.now()
-            data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
-            # Ação e Valor que recebe
-            acao = "Canal-Tv"
+                msg.setText(".::Error::.")
+                msg.setInformativeText("A Televisão se Encontra Desligada")
+                msg.setWindowTitle("TV Desligada")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+            else:
+                self.canal_menos_tv()
+                valor = int(self.ui.text_canal.text()) - 1
+                self.ui.text_canal.setText(str(valor))
+                teste_conexao = 0
 
-            try:
-                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-                # Cria um cursor:
-                cursor = conexao.cursor()
+                data_atual = datetime.now()
+                data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
+                # Ação e Valor que recebe
+                acao = "Canal-Tv"
+
                 # Executa o comando:
                 cursor.execute("UPDATE configuracao_user SET canais_tv=%s WHERE id=1", valor)
-                conexao.close()
 
                 valor = False
 
-                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-                # Cria um cursor:
-                cursor = conexao.cursor()
                 # Executa o comando:
                 cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)",
                                (acao, valor, data_db))
                 conexao.close()
 
             # Caso a Conexão dê errado:
-            except pymysql.err.OperationalError as e:
-                if teste_conexao == 0:
-                    print("Error while connecting to MySQL", e)
+        except pymysql.err.OperationalError as e:
+            if teste_conexao == 0:
+                print("Error while connecting to MySQL", e)
 
-                    msg = QMessageBox()
-                    msg.setIcon(QMessageBox.Critical)
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
 
-                    msg.setText(".::Erro de Conexão com o Banco de Dados::.")
-                    msg.setInformativeText("Falha na Comunicação com o Servidor!")
-                    msg.setWindowTitle("Erro na Inicialização")
-                    msg.setDetailedText(
-                        "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
-                    msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-                    msg.exec_()
-                    teste_conexao = 1
+                msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                msg.setWindowTitle("Erro na Inicialização")
+                msg.setDetailedText("Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+                teste_conexao = 1
 
     def update_modo_ar(self):
-        conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-        # Cria um cursor:
-        cursor = conexao.cursor()
-        # Executa o comando:
-        cursor.execute("SELECT ar_condicionado FROM configuracao_user  WHERE id=1")
 
-        # Recupera o resultado:
-        resultado = cursor.fetchall()
-        if cursor.rowcount > 0:
-            for linha in resultado:
-                ar_ligado = linha[0]
-        if ar_ligado == False:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Critical)
+        try:
+            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+            # Cria um cursor:
+            cursor = conexao.cursor()
+            # Executa o comando:
+            cursor.execute("SELECT ar_condicionado FROM configuracao_user  WHERE id=1")
 
-            msg.setText(".::Error::.")
-            msg.setInformativeText("O Ar Condicionado se Encontra Desligado")
-            msg.setWindowTitle("Ar Desligado")
-            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            msg.exec_()
-        else:
+            # Recupera o resultado:
+            resultado = cursor.fetchall()
+            if cursor.rowcount > 0:
+                for linha in resultado:
+                    ar_ligado = linha[0]
+            if ar_ligado == False:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
 
-            # Valor False=Normal | True=Turbo
-            data_atual = datetime.now()
-            data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
+                msg.setText(".::Error::.")
+                msg.setInformativeText("O Ar Condicionado se Encontra Desligado")
+                msg.setWindowTitle("Ar Desligado")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+            else:
+                self.modo_ar()
+                # Valor False=Normal | True=Turbo
+                data_atual = datetime.now()
+                data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
 
-            acao = "Modo-Ar"
+                acao = "Modo-Ar"
 
-            valor = self.ui.text_modo_ar.text()
-            if valor == "Normal":
-                valor = True
-                self.ui.text_modo_ar.setText("Turbo")
-            elif valor == "Turbo":
-                valor = False
-                self.ui.text_modo_ar.setText("Normal")
-            teste_conexao = 0
+                valor = self.ui.text_modo_ar.text()
+                if valor == "Normal":
+                    valor = True
+                    self.ui.text_modo_ar.setText("Turbo")
+                elif valor == "Turbo":
+                    valor = False
+                    self.ui.text_modo_ar.setText("Normal")
+                teste_conexao = 0
 
-            try:
-                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-                # Cria um cursor:
-                cursor = conexao.cursor()
                 # Executa o comando:
                 cursor.execute("UPDATE configuracao_user SET modo_ar=%s WHERE id=1", valor)
-                conexao.close()
 
-                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-                # Cria um cursor:
-                cursor = conexao.cursor()
                 # Executa o comando:
                 cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)",
                                (acao, valor, data_db))
@@ -1592,23 +1566,23 @@ class MyWin(QtWidgets.QMainWindow):
 
 
             # Caso a Conexão dê errado:
-            except pymysql.err.OperationalError as e:
-                if teste_conexao == 0:
-                    print("Error while connecting to MySQL", e)
+        except pymysql.err.OperationalError as e:
+            if teste_conexao == 0:
+                print("Error while connecting to MySQL", e)
 
-                    msg = QMessageBox()
-                    msg.setIcon(QMessageBox.Critical)
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
 
-                    msg.setText(".::Erro de Conexão com o Banco de Dados::.")
-                    msg.setInformativeText("Falha na Comunicação com o Servidor!")
-                    msg.setWindowTitle("Erro na Inicialização")
-                    msg.setDetailedText(
-                        "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
-                    msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-                    msg.exec_()
-                    teste_conexao = 1
+                msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                msg.setWindowTitle("Erro na Inicialização")
+                msg.setDetailedText("Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+                teste_conexao = 1
 
     def update_power_ar(self):
+        self.power_off_ar()
         valor = self.ui.btn_power_ar.text()
         data_atual = datetime.now()
         data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
@@ -1629,11 +1603,7 @@ class MyWin(QtWidgets.QMainWindow):
             cursor = conexao.cursor()
             # Executa o comando:
             cursor.execute("UPDATE configuracao_user SET ar_condicionado=%s WHERE id=1", valor)
-            conexao.close()
 
-            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-            # Cria um cursor:
-            cursor = conexao.cursor()
             # Executa o comando:
             cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)", (acao, valor, data_db))
             conexao.close()
@@ -1656,7 +1626,7 @@ class MyWin(QtWidgets.QMainWindow):
                 teste_conexao = 1
 
     def update_power_tv(self):
-
+        self.power_off_tv()
         valor = self.ui.btn_power_tv.text()
         data_atual = datetime.now()
         data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
@@ -1676,11 +1646,6 @@ class MyWin(QtWidgets.QMainWindow):
             cursor = conexao.cursor()
             # Executa o comando:
             cursor.execute("UPDATE configuracao_user SET televisao=%s WHERE id=1", valor)
-            conexao.close()
-
-            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-            # Cria um cursor:
-            cursor = conexao.cursor()
             # Executa o comando:
             cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)", (acao, valor, data_db))
             conexao.close()
@@ -2771,7 +2736,6 @@ class MyWin(QtWidgets.QMainWindow):
                         vetor_z_power_ar_on_tendencia[0][k] = vetor_z_power_ar_on[0][nn]
                         k = k + 1
 
-                print(vetor_x_power_ar_on_tendencia)
                 ##########Inserção no BD#############
                 # DELETA VALORES DO BD PREVIAMENTE CONFIGURADOS
                 cursor.execute("DELETE FROM tendencias WHERE acao='Power-Ar-On'")
