@@ -23,7 +23,7 @@ import serial
 teste_conexao = 0
 botao_info = False
 #Conexao com a porta SERIAL
-serial_port = serial.Serial('COM6', 9600)
+serial_port = serial.Serial('COM8', 9600)
 
 class MyWin(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
@@ -92,6 +92,8 @@ class MyWin(QtWidgets.QMainWindow):
         # Chama Machine Learn
         self.machine_learning()
 
+        #Chama agente gerente
+        self.agente_gerente()
 
     # FUNÇÕES DO SISTEMA
     def minha_data(self):
@@ -101,6 +103,7 @@ class MyWin(QtWidgets.QMainWindow):
         horas_em_texto = data_atual.strftime('%Hh:%Mmin:%Ss')
         saida = "Agora é " + horas_em_texto + " do dia: " + data_em_texto
         self.ui.data.setText(saida)
+
         t = threading.Timer(1, self.minha_data)
         t.start()
 
@@ -122,11 +125,11 @@ class MyWin(QtWidgets.QMainWindow):
         return aba
 
     def teste_btn(self):
-        valor=self.medicao_potencia()
-        self.ui.label_3.setText(valor)
+        #valor=self.medicao_potencia()
+        self.ui.label_3.setText("Botão Pressionado")
 
     def sair(self):
-        serial_port.close()
+
         window.destroy()
         sys.exit(app.exec_())
 
@@ -3374,14 +3377,16 @@ class MyWin(QtWidgets.QMainWindow):
             serial_port.flush()
             data=serial_port.readline().decode('utf-8')
             print(data)
+        serial_port.close()
 
     #Temperatura e Umidade
     def temp_umid(self):
         serial_port.write(b't')
         serial_port.flush()
-        data1 = serial_port.readline().decode('utf-8')
-        data2 = serial_port.readline().decode('utf-8')
+        data1 = serial_port.readline().decode('utf-8').replace('\r\n', '')
+        data2 = serial_port.readline().decode('utf-8').replace('\r\n', '')
         return(data1,data2)
+        serial_port.close()
 
     #Intensidade Luminosa
     def luximetro(self):
@@ -3389,32 +3394,38 @@ class MyWin(QtWidgets.QMainWindow):
         serial_port.flush()
         data = serial_port.readline().decode('utf-8')
         return(data)
+        serial_port.close()
 
     #Controle TV
     def power_off_tv(self):
         serial_port.write(b's,2,99,3450,1700,450,400,450,1250,450,450,400,450,450,400,450,400,450,450,400,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,1300,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,1300,450,400,450,1300,400,1300,450,1300,400,1300,450,400,450,400,450,1300,450,400,450,1300,400,1300,450,1250,450,1300,450,400,450,1300,400')
         serial_port.flush()
         return("Comando Enviado para TV")
+        serial_port.close()
 
     def canal_mais_tv(self):
         serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
         serial_port.flush()
         return("Comando Enviado para TV")
+        serial_port.close()
 
     def canal_menos_tv(self):
         serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,1300,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,1250,450,450,450,400,450,400,450,450,400,450,400,450,450,400,450,400,450,1300,450,400,450,1250,450,450,400,1300,450,1300,400,450,450,400,450,1250,450,450,400,1300,450,400,450,1300,450,1250,450,400,450,1300,450')
         serial_port.flush()
         return("Comando Enviado para TV")
+        serial_port.close()
 
     def vol_mais_tv(self):
         serial_port.write(b's,2,99,3450,1700,450,400,500,1250,450,400,450,400,450,400,500,400,450,400,450,400,450,400,450,450,450,400,450,400,450,400,500,1250,450,400,450,400,450,400,500,400,400,450,450,400,450,400,500,350,500,400,450,1250,450,400,450,450,450,400,450,400,450,400,500,350,500,400,450,400,450,400,450,400,500,400,450,400,450,400,450,1250,500,400,450,400,450,400,450,400,500,400,450,400,450,400,450,1250,500,400,450,1250,450')
         serial_port.flush()
         return("Comando Enviado para TV")
+        serial_port.close()
 
     def vol_menos_tv(self):
         serial_port.write(b's,2,99,3450,1700,450,400,500,1250,450,400,450,400,500,350,500,400,450,400,450,400,450,400,500,400,450,400,450,400,450,400,500,1250,450,400,450,400,450,400,500,400,450,400,450,400,450,400,500,350,500,400,450,1250,450,400,450,450,400,450,450,400,450,400,500,350,500,400,450,400,450,1250,500,400,450,400,450,400,450,400,450,1300,450,400,450,400,450,1300,450,400,450,400,450,400,450,400,500,1250,450,400,450,1300,450')
         serial_port.flush()
         return("Comando Enviado para TV")
+        serial_port.close()
 
     #Controle AR
     def power_off_ar(self):
@@ -3422,24 +3433,28 @@ class MyWin(QtWidgets.QMainWindow):
         serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
         serial_port.flush()
         return("Comando Enviado para o AR")
+        serial_port.close()
 
     def temp_mais_ar(self):
         #Mudar o Codigo do Comando
         serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
         serial_port.flush()
         return("Comando Enviado para o AR")
+        serial_port.close()
 
     def temp_menos_ar(self):
         #Mudar o Codigo do Comando
         serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
         serial_port.flush()
         return("Comando Enviado para o AR")
+        serial_port.close()
 
     def modo_ar(self):
         #Mudar o Codigo do Comando
         serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
         serial_port.flush()
         return("Comando Enviado para o AR")
+        serial_port.close()
 
     def medicao_potencia(self):
         serial_port.write(b'p')
@@ -3447,21 +3462,31 @@ class MyWin(QtWidgets.QMainWindow):
         data1 = serial_port.readline().decode('utf-8') #Valor da Corrente Medida
         data2 = serial_port.readline().decode('utf-8') #Valor da Tensão Medida
         return (data2)
+        serial_port.close()
+
+    #Apresentação de Parâmetros na interface
+    def apresenta_parametros(self):
+        temperatura, umidade = self.agente_recepcao("temp_amb")
+        lux= self.agente_recepcao("lux")
+        self.ui.txt_temp_amb.setText(temperatura + "ºC")
+        self.ui.txt_umid.setText(umidade + "%")
+        self.ui.txt_lux.setText(lux)
+
+        tt = threading.Timer(1, self.apresenta_parametros)
+        tt.start()
 
     #Agentes
-    def agente_recepcao(self):
-        # serial_port.write(b'p')
-        # serial_port.flush()
-        # data1 = serial_port.readline().decode('utf-8')
-        # data2 = serial_port.readline().decode('utf-8')
-        # return (data2)
-        temperatura,umidade=self.temp_umid()
-        if temperatura !='' and umidade!='':
-            #Chama agente de temperatura e umidade
-            return
+    def agente_recepcao(self, modo):
+        if modo=="temp_amb":
+            umidade,temperatura=self.temp_umid()
+            return temperatura,umidade
+        elif modo=="lux":
+            lux=self.luximetro()
+            return lux
 
     def agente_gerente(self):
-        return
+        self.apresenta_parametros()
+        #return
 
 
 
