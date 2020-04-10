@@ -1,5 +1,4 @@
 import threading
-from concurrent.futures import thread
 from idlelib import window
 from info import Ui_InfoWindow
 import numpy
@@ -103,8 +102,8 @@ class MyWin(QtWidgets.QMainWindow):
         saida = "Agora é " + horas_em_texto + " do dia: " + data_em_texto
         self.ui.data.setText(saida)
 
-        # t = threading.Timer(1, self.minha_data)
-        # t.start()
+        t = threading.Timer(1, self.minha_data)
+        t.start()
 
 
         # if data_em_texto=='30/01/2020':
@@ -583,8 +582,8 @@ class MyWin(QtWidgets.QMainWindow):
             teste_conexao = 0
 
             # Threading para Consultas do BD
-            # s = threading.Timer(15, self.consumo_mensal)
-            # s.start()
+            s = threading.Timer(15, self.consumo_mensal)
+            s.start()
 
         # Caso a Conexão dê errado:
         except pymysql.err.OperationalError as e:
@@ -603,8 +602,8 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.exec_()
                 teste_conexao = 1
 
-            # s = threading.Timer(15, self.consumo_mensal)
-            # s.start()
+            s = threading.Timer(15, self.consumo_mensal)
+            s.start()
         return
 
     def seta_data_grafico(self):
@@ -1652,9 +1651,6 @@ class MyWin(QtWidgets.QMainWindow):
                 teste_conexao = 1
 
     def update_power_tv(self):
-        # thread = threading.Thread(target=self.power_off_tv)
-        # thread.start()
-        # thread.join()
         self.power_off_tv()
         valor = self.ui.btn_power_tv.text()
         data_atual = datetime.now()
@@ -3383,15 +3379,15 @@ class MyWin(QtWidgets.QMainWindow):
         data1 = serial_port.readline().decode('utf-8').replace('\r\n', '')
         data2 = serial_port.readline().decode('utf-8').replace('\r\n', '')
         return(data1,data2)
-        #serial_port.close()
+        serial_port.close()
 
     #Intensidade Luminosa
     def luximetro(self):
         serial_port.write(b'l')
         serial_port.flush()
-        data = serial_port.readline().decode('utf-8').replace('\r\n', '').replace(',', '.')
+        data = serial_port.readline().decode('utf-8')
         return(data)
-        #serial_port.close()
+        serial_port.close()
 
     #Controle TV
     def power_off_tv(self):
@@ -3453,19 +3449,24 @@ class MyWin(QtWidgets.QMainWindow):
         return("Comando Enviado para o AR")
         serial_port.close()
 
+    def medicao_potencia(self):
+        serial_port.write(b'p')
+        serial_port.flush()
+        data1 = serial_port.readline().decode('utf-8') #Valor da Corrente Medida
+        data2 = serial_port.readline().decode('utf-8') #Valor da Tensão Medida
+        return (data2)
+        serial_port.close()
 
     #Apresentação de Parâmetros na interface
     def apresenta_parametros(self):
-        #temperatura, umidade = self.agente_recepcao("temp_amb")
-        #lux= self.agente_recepcao("lux")
-        umidade,temperatura=self.temp_umid()
-        lux=self.luximetro()
+        temperatura, umidade = self.agente_recepcao("temp_amb")
+        lux= self.agente_recepcao("lux")
         self.ui.txt_temp_amb.setText(temperatura + "ºC")
         self.ui.txt_umid.setText(umidade + "%")
         self.ui.txt_lux.setText(lux)
 
-        # tt = threading.Timer(1, self.apresenta_parametros)
-        # tt.start()
+        tt = threading.Timer(1, self.apresenta_parametros)
+        tt.start()
 
     def check_aprendizagem(self):
         #Checagem para chamar Machine Learning
@@ -3507,28 +3508,6 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.exec_()
                 teste_conexao = 1
 
-    #Check per second
-    def action_1_second(self):
-        self.minha_data()
-
-        #self.registro_potencia()
-
-        clock_1_sec = threading.Timer(1, self.action_1_second)
-        clock_1_sec.start()
-    def action_5_seconds(self):
-        self.apresenta_parametros()
-
-        clock_5_sec = threading.Timer(5, self.action_5_seconds)
-        clock_5_sec.start()
-    def action_15_seconds(self):
-        self.consumo_mensal()
-
-        clock_15_sec = threading.Timer(15, self.action_15_seconds)
-        clock_15_sec.start()
-        #clock_15_sec.join()
-    #Registro de potência
-
-
     #Agentes
     def agente_recepcao(self, modo):
         if modo=="temp_amb":
@@ -3539,10 +3518,7 @@ class MyWin(QtWidgets.QMainWindow):
             return lux
 
     def agente_gerente(self):
-        self.action_1_second()
-        self.action_5_seconds()
-        self.action_15_seconds()
-
+        self.apresenta_parametros()
         aprendizagem=self.check_aprendizagem()
         if aprendizagem==True:
             self.machine_learning()

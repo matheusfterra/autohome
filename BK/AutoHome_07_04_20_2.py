@@ -1,5 +1,4 @@
 import threading
-from concurrent.futures import thread
 from idlelib import window
 from info import Ui_InfoWindow
 import numpy
@@ -1652,9 +1651,6 @@ class MyWin(QtWidgets.QMainWindow):
                 teste_conexao = 1
 
     def update_power_tv(self):
-        # thread = threading.Thread(target=self.power_off_tv)
-        # thread.start()
-        # thread.join()
         self.power_off_tv()
         valor = self.ui.btn_power_tv.text()
         data_atual = datetime.now()
@@ -1695,6 +1691,7 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
                 teste_conexao = 1
+        self.action_5_seconds()
 
     def update_Aprendizagem(self):
         valor = self.ui.check_Aprendizagem.checkState()
@@ -3378,12 +3375,13 @@ class MyWin(QtWidgets.QMainWindow):
 
     #Temperatura e Umidade
     def temp_umid(self):
+
         serial_port.write(b't')
         serial_port.flush()
         data1 = serial_port.readline().decode('utf-8').replace('\r\n', '')
         data2 = serial_port.readline().decode('utf-8').replace('\r\n', '')
         return(data1,data2)
-        #serial_port.close()
+        serial_port.close()
 
     #Intensidade Luminosa
     def luximetro(self):
@@ -3391,7 +3389,7 @@ class MyWin(QtWidgets.QMainWindow):
         serial_port.flush()
         data = serial_port.readline().decode('utf-8').replace('\r\n', '').replace(',', '.')
         return(data)
-        #serial_port.close()
+        serial_port.close()
 
     #Controle TV
     def power_off_tv(self):
@@ -3453,12 +3451,27 @@ class MyWin(QtWidgets.QMainWindow):
         return("Comando Enviado para o AR")
         serial_port.close()
 
+    def medicao_potencia(self):
+        serial_port.write(b'p')
+        serial_port.flush()
+        data1 = serial_port.readline().decode().replace(',', '.').strip() #Valor da Corrente Medida
+        data2 = serial_port.readline().decode().replace(',', '.').strip() #Valor da Tensão Medida
+        try:
+            send_data1=float(data1)
+            send_data2=float(data2)
+            return send_data1, send_data2
+        except:
+            print("Error na medição")
+            return 0.0,0.0
+            #self.medicao_potencia()
+
+        serial_port.close()
 
     #Apresentação de Parâmetros na interface
     def apresenta_parametros(self):
         #temperatura, umidade = self.agente_recepcao("temp_amb")
         #lux= self.agente_recepcao("lux")
-        umidade,temperatura=self.temp_umid()
+        temperatura, umidade=self.temp_umid()
         lux=self.luximetro()
         self.ui.txt_temp_amb.setText(temperatura + "ºC")
         self.ui.txt_umid.setText(umidade + "%")
@@ -3517,9 +3530,11 @@ class MyWin(QtWidgets.QMainWindow):
         clock_1_sec.start()
     def action_5_seconds(self):
         self.apresenta_parametros()
+        self.registro_potencia()
 
-        clock_5_sec = threading.Timer(5, self.action_5_seconds)
+        clock_5_sec = threading.Timer(1, self.action_5_seconds)
         clock_5_sec.start()
+
     def action_15_seconds(self):
         self.consumo_mensal()
 
@@ -3527,7 +3542,14 @@ class MyWin(QtWidgets.QMainWindow):
         clock_15_sec.start()
         #clock_15_sec.join()
     #Registro de potência
+    def registro_potencia(self):
+        cor,ten=self.agente_recepcao("pot")
 
+        potencia=cor*ten
+        print("Minha corrente é:{}A e minha tensão é:{}V e minha potência é:{}W".format(cor,ten,potencia))
+
+        # clock_pot = threading.Timer(5, self.registro_potencia)
+        # clock_pot.start()
 
     #Agentes
     def agente_recepcao(self, modo):
@@ -3537,6 +3559,9 @@ class MyWin(QtWidgets.QMainWindow):
         elif modo=="lux":
             lux=self.luximetro()
             return lux
+        elif modo=="pot":
+            corrente,tensao=self.medicao_potencia()
+            return corrente,tensao
 
     def agente_gerente(self):
         self.action_1_second()
