@@ -605,7 +605,6 @@ class MyWin(QtWidgets.QMainWindow):
 
             # s = threading.Timer(15, self.consumo_mensal)
             # s.start()
-        return
 
     def seta_data_grafico(self):
         # Variáveis setadas como Globais para usar no decorrer da função
@@ -657,7 +656,6 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.comboBox_Dia.setCurrentText(str(dia))
         self.ui.comboBox_Ano.setCurrentText(str(ano))
 
-        return
 
     def update_graph(self):
         # Variaveis Globais para a Função
@@ -693,7 +691,6 @@ class MyWin(QtWidgets.QMainWindow):
             resultado = cursor.fetchall()
             if cursor.rowcount > 0:
                 res = np.array([[0] * 5] * cursor.rowcount, dtype=np.int64)
-
                 for linha in resultado:
                     res[i][0] = linha[0]
                     res[i][2] = linha[2]
@@ -742,9 +739,11 @@ class MyWin(QtWidgets.QMainWindow):
                         res[i][1] = data
                         # Identifica a quantidade de Dias Diferentes no Mês
                         p = 1
-                        for x in range(0, i - 1):
+                        print(res)
+                        for x in range(0, i):
                             if res[x][1] != res[x + 1][1]:
                                 p = p + 1
+                            print(p)
                         # Cria Eixos do tamanho adequado
                         eixo_x = np.zeros((1, p))
                         eixo_y = np.zeros((1, p))
@@ -755,22 +754,22 @@ class MyWin(QtWidgets.QMainWindow):
 
                         potencia_dia = np.zeros((1, p))
                         # Atribuiu os valores dos dias no Eixo X
-                        for x in range(0, i - 1):
+                        for x in range(0, i):
                             if res[x][1] != res[x + 1][1]:
                                 dias_do_mes[0][n + 1] = res[x + 1][1]
                                 n = n + 1
                         n = 0
                         # Atribui os valores das Potencias no Eixo Y
                         potencia_dia[0][0] = res[0][4]
-                        for x in range(0, i - 1):
+                        for x in range(0, i):
                             if res[x][1] == res[x + 1][1]:
                                 potencia_dia[0][n] = potencia_dia[0][n] + res[x + 1][4]
                             elif res[x][1] != res[x + 1][1]:
                                 n = n + 1
                                 potencia_dia[0][n] = res[x + 1][4]
                         # Correcao do BUG mensal
-                        if i != 0:
-                            potencia_dia[0][n] = potencia_dia[0][n] + res[i][4]
+                        # if i != 0:
+                        #     potencia_dia[0][n] = potencia_dia[0][n] + res[i][4]
 
                     # Caso selecao em Ano
                     elif selecao == 'Anual':
@@ -892,9 +891,6 @@ class MyWin(QtWidgets.QMainWindow):
         except pymysql.err.OperationalError as e:
             print("Error while connecting to MySQL", e)
 
-        # return
-
-        # EXECUTA JANELA
 
     def backup(self):
 
