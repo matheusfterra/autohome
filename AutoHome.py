@@ -234,7 +234,7 @@ class MyWin(QtWidgets.QMainWindow):
                     res[i][1] = data
                     # Identifica a quantidade de Dias Diferentes no Mês
                     p = 1
-                    for x in range(0, i - 1):
+                    for x in range(0, i ):
                         if res[x][1] != res[x + 1][1]:
                             p = p + 1
                     # Cria Eixos do tamanho adequado
@@ -247,7 +247,7 @@ class MyWin(QtWidgets.QMainWindow):
 
                     potencia_dia = np.zeros((1, p))
                     # Atribuiu os valores dos dias no Eixo X
-                    for x in range(0, i - 1):
+                    for x in range(0, i):
                         if res[x][1] != res[x + 1][1]:
                             dias_do_mes[0][n + 1] = res[x + 1][1]
                             n = n + 1
@@ -255,7 +255,7 @@ class MyWin(QtWidgets.QMainWindow):
 
                     potencia_dia[0][0] = res[0][4]
                     # Atribui os valores das Potencias no Eixo Y
-                    for x in range(0, i - 1):
+                    for x in range(0, i):
                         if res[x][1] == res[x + 1][1]:
                             potencia_dia[0][n] = potencia_dia[0][n] + res[x + 1][4]
 
@@ -264,8 +264,8 @@ class MyWin(QtWidgets.QMainWindow):
                             potencia_dia[0][n] = res[x + 1][4]
 
                     # Correcao do BUG Mensal
-                    if i != 0:
-                        potencia_dia[0][n] = potencia_dia[0][n] + res[i][4]
+                    # if i != 0:
+                    #     potencia_dia[0][n] = potencia_dia[0][n] + res[i][4]
 
                     for x in range(0, p):
                         eixo_y_dia[0][x] = potencia_dia[0][x]
@@ -656,7 +656,6 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.comboBox_Dia.setCurrentText(str(dia))
         self.ui.comboBox_Ano.setCurrentText(str(ano))
 
-
     def update_graph(self):
         # Variaveis Globais para a Função
         global potencia_dia
@@ -739,11 +738,9 @@ class MyWin(QtWidgets.QMainWindow):
                         res[i][1] = data
                         # Identifica a quantidade de Dias Diferentes no Mês
                         p = 1
-                        print(res)
                         for x in range(0, i):
                             if res[x][1] != res[x + 1][1]:
                                 p = p + 1
-                            print(p)
                         # Cria Eixos do tamanho adequado
                         eixo_x = np.zeros((1, p))
                         eixo_y = np.zeros((1, p))
@@ -890,7 +887,6 @@ class MyWin(QtWidgets.QMainWindow):
         # Caso a Conexão dê errado:
         except pymysql.err.OperationalError as e:
             print("Error while connecting to MySQL", e)
-
 
     def backup(self):
 
