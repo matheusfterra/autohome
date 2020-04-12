@@ -199,7 +199,7 @@ class MyWin(QtWidgets.QMainWindow):
                             n = n + 1
                             potencia_dia[0][n] = res[x + 1][4]
                     for x in range(0, p):
-                        eixo_y_hora[0][x] = round((potencia_dia[0][x])/3600000,4) # Conversão para  kWh
+                        eixo_y_hora[0][x] = (potencia_dia[0][x])/3600000 # Conversão para  kWh
                         eixo_x_hora[0][x] = horas_do_dia[0][x]
 
                     i = 1 + i
@@ -268,7 +268,7 @@ class MyWin(QtWidgets.QMainWindow):
                     #     potencia_dia[0][n] = potencia_dia[0][n] + res[i][4]
 
                     for x in range(0, p):
-                        eixo_y_dia[0][x] = round((potencia_dia[0][x])/3600000,4)
+                        eixo_y_dia[0][x] = (potencia_dia[0][x])/3600000
                         eixo_x_dia[0][x] = dias_do_mes[0][x]
                     i = 1 + i
 
@@ -330,7 +330,7 @@ class MyWin(QtWidgets.QMainWindow):
                     i = 1 + i
 
                     for x in range(0, p):
-                        eixo_y_mes[0][x] = round((potencia_mes[0][x])/3600000,4)
+                        eixo_y_mes[0][x] = (potencia_mes[0][x])/3600000
                         eixo_x_mes[0][x] = mes_do_ano[0][x]
                 # Conta a quantidade de valores do Vetor
                 posicao3 = len(eixo_x_mes[0])
@@ -573,7 +573,7 @@ class MyWin(QtWidgets.QMainWindow):
                 consumo_total=(consumo_total)/3600000 #Dividindo por 3600000 para conversão para kWh
                 # Atualização dos Valores da Interface
                 self.ui.consumo_instantaneo.setText(str(res[0][4]))
-                self.ui.consumo_mensal.setText(str(round(consumo_total,4)))
+                self.ui.consumo_mensal.setText(str(consumo_total))
             else:
                 print("Dados Insuficientes no Banco de Dados")
             # Finaliza a conexão
@@ -3365,7 +3365,7 @@ class MyWin(QtWidgets.QMainWindow):
         data1 = serial_port.readline().decode('utf-8').replace('\r\n', '')
         data2 = serial_port.readline().decode('utf-8').replace('\r\n', '')
 
-        serial_port.close()
+        #serial_port.close()
         return (data1, data2)
     #Intensidade Luminosa
     def luximetro(self):
@@ -3373,7 +3373,7 @@ class MyWin(QtWidgets.QMainWindow):
         serial_port.flush()
         data = serial_port.readline().decode('utf-8').replace('\r\n', '').replace(',', '.')
 
-        serial_port.close()
+        #serial_port.close()
         return (data)
     #Controle TV
     def power_off_tv(self):
@@ -3498,7 +3498,7 @@ class MyWin(QtWidgets.QMainWindow):
         clock_1_sec = threading.Timer(1, self.action_1_second)
         clock_1_sec.start()
     def action_5_seconds(self):
-        #self.apresenta_parametros()
+        self.apresenta_parametros()
 
         clock_5_sec = threading.Timer(5, self.action_5_seconds)
         clock_5_sec.start()
