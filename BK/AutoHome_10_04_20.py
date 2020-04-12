@@ -199,7 +199,7 @@ class MyWin(QtWidgets.QMainWindow):
                             n = n + 1
                             potencia_dia[0][n] = res[x + 1][4]
                     for x in range(0, p):
-                        eixo_y_hora[0][x] = round((potencia_dia[0][x])/3600000,4) # Conversão para  kWh
+                        eixo_y_hora[0][x] = potencia_dia[0][x]
                         eixo_x_hora[0][x] = horas_do_dia[0][x]
 
                     i = 1 + i
@@ -268,7 +268,7 @@ class MyWin(QtWidgets.QMainWindow):
                     #     potencia_dia[0][n] = potencia_dia[0][n] + res[i][4]
 
                     for x in range(0, p):
-                        eixo_y_dia[0][x] = round((potencia_dia[0][x])/3600000,4)
+                        eixo_y_dia[0][x] = potencia_dia[0][x]
                         eixo_x_dia[0][x] = dias_do_mes[0][x]
                     i = 1 + i
 
@@ -330,7 +330,7 @@ class MyWin(QtWidgets.QMainWindow):
                     i = 1 + i
 
                     for x in range(0, p):
-                        eixo_y_mes[0][x] = round((potencia_mes[0][x])/3600000,4)
+                        eixo_y_mes[0][x] = potencia_mes[0][x]
                         eixo_x_mes[0][x] = mes_do_ano[0][x]
                 # Conta a quantidade de valores do Vetor
                 posicao3 = len(eixo_x_mes[0])
@@ -573,10 +573,9 @@ class MyWin(QtWidgets.QMainWindow):
                 for x in range(0, i):
                     consumo_total = consumo_total + res[x][4]
 
-                consumo_total=(consumo_total)/3600000 #Dividindo por 3600000 para conversão para kWh
                 # Atualização dos Valores da Interface
                 self.ui.consumo_instantaneo.setText(str(res[0][4]))
-                self.ui.consumo_mensal.setText(str(round(consumo_total,4)))
+                self.ui.consumo_mensal.setText(str(consumo_total))
             else:
                 print("Dados Insuficientes no Banco de Dados")
             # Finaliza a conexão
@@ -809,19 +808,19 @@ class MyWin(QtWidgets.QMainWindow):
                 # Cria um Interrupt caso seja selecionado Diário, para recarregar a cada hora.
                 if selecao == 'Diário':
                     for x in range(0, p):
-                        eixo_y[0][x] = round(potencia_dia[0][x]/3600000,4)
+                        eixo_y[0][x] = potencia_dia[0][x]
                         eixo_x[0][x] = horas_do_dia[0][x]
                     u = threading.Timer(3600, self.update_graph)
                     u.start()
                 # Atribui as variáveis nos eixos para Apresentar
                 if selecao == 'Mensal':
                     for x in range(0, p):
-                        eixo_y[0][x] = round(potencia_dia[0][x]/3600000,4)
+                        eixo_y[0][x] = potencia_dia[0][x]
                         eixo_x[0][x] = dias_do_mes[0][x]
                 # Atribui as variáveis nos eixos para Apresentar
                 if selecao == 'Anual':
                     for x in range(0, p):
-                        eixo_y[0][x] = round(potencia_mes[0][x]/3600000,4)
+                        eixo_y[0][x] = potencia_mes[0][x]
                         eixo_x[0][x] = mes_do_ano[0][x]
 
                 # Cria os Graficos
