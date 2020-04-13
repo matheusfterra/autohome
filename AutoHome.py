@@ -6,9 +6,9 @@ import numpy
 import self as self
 from PyQt5.QtWidgets import QMainWindow, QLabel, QApplication, QWidget, QPushButton, QMessageBox
 from datetime import datetime, timedelta, date
+import time
 import datetime as dt
 import threading as th
-import time
 from PyQt5.QtWidgets import *
 from interface import *
 from backup_db import *
@@ -23,6 +23,9 @@ import serial
 
 teste_conexao = 0
 botao_info = False
+#Variável usada para conferência da mudança de hora para realização do backup
+hora_inicial=datetime.now()
+hora_inicial = hora_inicial.replace(minute=00,second=00,microsecond=0)
 #Conexao com a porta SERIAL
 serial_port = serial.Serial('COM15', baudrate = 9600, writeTimeout = 0)
 
@@ -552,7 +555,7 @@ class MyWin(QtWidgets.QMainWindow):
             resultado = cursor.fetchall()
             if cursor.rowcount > 0:
                 print("Numero de Registros: ", cursor.rowcount)
-                res = np.array([[0] * 5] * cursor.rowcount, dtype=np.int64)
+                res = np.array([[0] * 5] * cursor.rowcount,dtype=np.float64)
                 # print(res, "\n")
                 # print("\nDados:")
                 for linha in resultado:
@@ -913,6 +916,87 @@ class MyWin(QtWidgets.QMainWindow):
             "Para Restaurar o último Backup,\nContacte o engenheiro responsável para fazê-lo manualmente.")
         msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
         msg.exec_()
+
+    def agrupamento_medicoes(self):
+        print("Verificando mudança de Horário")
+        global hora_inicial
+        global teste_conexao
+        time_now=datetime.now().replace(minute=00,second=00,microsecond=00)
+        ano = hora_inicial.year
+        mes=hora_inicial.month
+        dia=hora_inicial.day
+        hora=hora_inicial.hour
+
+        if time_now != hora_inicial:
+
+            print("Realizando Condensação dos registros de medições")
+
+            try:
+                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+                # Cria um cursor:
+                cursor = conexao.cursor()
+                # Executa o comando:
+                cursor.execute("SELECT * FROM medicao  WHERE YEAR(horario) = %s AND MONTH(horario) = %s AND DAY(horario) = %s AND HOUR(horario) = %s ORDER BY horario DESC ", (ano,mes,dia,hora))
+                # Recupera o resultado:
+                resultado = cursor.fetchall()
+                if cursor.rowcount > 0:
+                    print("Quantidade de medições: ", cursor.rowcount)
+                    res = np.array([[0] * 5] * cursor.rowcount,dtype=np.float64)
+                    i=0
+                    for linha in resultado:
+                        data = linha[1]
+
+                        res[i][0] = linha[0]
+                        #res[i][1] = valor
+                        res[i][2] = linha[2]
+                        res[i][3] = linha[3]
+                        res[i][4] = linha[4]
+
+                        i+=1
+
+                    print(res)
+                    corrente=0
+                    tensao=0
+                    potencia=0
+                    for x in range(0, cursor.rowcount):
+                        corrente=res[x][2]+corrente
+                        tensao = res[x][3] + tensao
+                        potencia=res[x][4] + potencia
+
+                    newdate = data.replace(minute=00,second=00)
+                    corrente=round(corrente/cursor.rowcount,3)
+                    tensao = round(tensao / cursor.rowcount,3)
+                    print(newdate)
+                    print("\nCorrente media:{}A, Tensão Media:{}V, Potencia Média:{}kWh\n".format(corrente,tensao,potencia))
+
+                    cursor.execute("DELETE FROM medicao WHERE YEAR(horario) = %s AND MONTH(horario) = %s AND DAY(horario) = %s AND HOUR(horario) = %s ORDER BY horario DESC ", (ano,mes,dia,hora))
+                    print("Medições não condensadas, DELETADAS")
+
+                    cursor.execute("INSERT INTO medicao (horario,corrente,tensao,potencia) VALUES(%s,%s,%s,%s)",(newdate,float(corrente),float(tensao),float(potencia)))
+                    print("Potência Condensada, registrada\n")
+
+                    conexao.close()
+                    hora_inicial = datetime.now().hour
+                else:
+                    print("Dados Insuficientes no Banco de Dados")
+                    # Finaliza a conexão
+                    conexao.close()
+                    teste_conexao = 0
+            except pymysql.err.OperationalError as e:
+                if teste_conexao == 0:
+                    print("Error while connecting to MySQL", e)
+
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Critical)
+
+                    msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                    msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                    msg.setWindowTitle("Erro na Inicialização")
+                    msg.setDetailedText(
+                        "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                    msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                    msg.exec_()
+                    teste_conexao = 1
 
     def change_slider_ilum(self):
         valor = self.ui.horizontalSlider.value()
@@ -3540,6 +3624,11 @@ class MyWin(QtWidgets.QMainWindow):
 
         clock_15_sec = threading.Timer(15, self.action_15_seconds)
         clock_15_sec.start()
+    def action_15_minutes(self):
+        self.agrupamento_medicoes()
+
+        clock_15_min = threading.Timer(400, self.action_15_minutes)
+        clock_15_min.start()
 
     #Agentes
     def agente_recepcao(self, modo):
@@ -3554,6 +3643,7 @@ class MyWin(QtWidgets.QMainWindow):
         self.action_1_second()
         self.action_5_seconds()
         self.action_15_seconds()
+        self.action_15_minutes()
 
         aprendizagem=self.check_aprendizagem()
         if aprendizagem==True:
