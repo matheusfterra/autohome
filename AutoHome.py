@@ -24,7 +24,7 @@ import serial
 teste_conexao = 0
 botao_info = False
 #Conexao com a porta SERIAL
-serial_port = serial.Serial('COM8', baudrate = 9600, writeTimeout = 0)
+serial_port = serial.Serial('COM15', baudrate = 9600, writeTimeout = 0)
 
 class MyWin(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
@@ -47,6 +47,8 @@ class MyWin(QtWidgets.QMainWindow):
 
         # Apresenta Consumo
         self.consumo_mensal()
+        print("Iniciando Software")
+        time.sleep(4)
 
         # Apresenta Grafico
         self.seta_data_grafico()
@@ -62,11 +64,13 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.comboBox_Mes.currentIndexChanged.connect(self.update_graph)
         self.ui.comboBox_Ano.currentIndexChanged.connect(self.update_graph)
 
-        # Funcoes de Botoes e Slider de Iluminacao e Temperatura//Aba QUARTO
-        #self.ui.horizontalSlider.valueChanged.connect(self.update_intensidade_iluminacao)
-        #self.ui.btn_on_ilum.clicked.connect(self.update_estado_iluminacao_on)
-        #self.ui.btn_off_ilum.clicked.connect(self.update_estado_iluminacao_off)
+        #Configurações
         self.set_configs_user()
+
+        # Funcoes de Botoes e Slider de Iluminacao e Temperatura//Aba QUARTO
+        self.ui.horizontalSlider.valueChanged.connect(self.update_intensidade_iluminacao)
+        self.ui.btn_on_ilum.clicked.connect(self.update_estado_iluminacao_on)
+        self.ui.btn_off_ilum.clicked.connect(self.update_estado_iluminacao_off)
         self.ui.btn_temp.clicked.connect(self.update_temp)
         self.ui.btn_temp_agua.clicked.connect(self.update_temp_banho)
         self.ui.btn_temp_mais.clicked.connect(self.update_temp_ar_mais)
@@ -128,7 +132,6 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.label_3.setText("Botão Pressionado")
 
     def sair(self):
-
         window.destroy()
         sys.exit(app.exec_())
 
@@ -529,6 +532,7 @@ class MyWin(QtWidgets.QMainWindow):
 
     def consumo_mensal(self):
         global teste_conexao
+
         data_atual = datetime.now()
         mes = int(data_atual.strftime('%m'))
         i = 0
@@ -909,19 +913,19 @@ class MyWin(QtWidgets.QMainWindow):
         msg.exec_()
 
     def update_intensidade_iluminacao(self):
-        valor = self.ui.horizontalSlider.value()
-        self.ui.label_10.setText(str(valor))
-        teste_conexao = 0
-
         try:
             conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
-
             # Cria um cursor:
             cursor = conexao.cursor()
-
             # Executa o comando:
+
+            valor = self.ui.horizontalSlider.value()
+            self.ui.label_10.setText(str(valor))
+            teste_conexao = 0
+
             cursor.execute("UPDATE configuracao_user SET intensidade_iluminacao=%s WHERE id=1", valor)
             conexao.close()
+
         # Caso a Conexão dê errado:
         except pymysql.err.OperationalError as e:
             if teste_conexao == 0:
@@ -940,10 +944,11 @@ class MyWin(QtWidgets.QMainWindow):
                 teste_conexao = 1
 
     def update_estado_iluminacao_on(self):
-        #valor = self.ui.horizontalSlider.value()
+        valor = self.ui.horizontalSlider.value()
         #self.lamp_control(valor)
         teste_conexao = 0
 
+        self.ui.horizontalSlider.setEnabled(True)
         data_atual = datetime.now()
         data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
         # Ação e Valor que recebe
@@ -987,9 +992,10 @@ class MyWin(QtWidgets.QMainWindow):
                 teste_conexao = 1
 
     def update_estado_iluminacao_off(self):
-        self.led_on_off("off")
+        #self.led_on_off("off")
         teste_conexao = 0
 
+        self.ui.horizontalSlider.setEnabled(False)
         data_atual = datetime.now()
         data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
         # Ação e Valor que recebe
@@ -1835,6 +1841,7 @@ class MyWin(QtWidgets.QMainWindow):
                 teste_conexao = 1
 
     def set_configs_user(self):
+
         try:
             conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
             # Cria um cursor:
@@ -1862,6 +1869,11 @@ class MyWin(QtWidgets.QMainWindow):
                     tendencia=linha[12]
 
                 self.ui.horizontalSlider.setValue(valor_ilum)
+                self.ui.label_10.setText(str(valor_ilum))
+                if valor_ilum==True:
+                    self.ui.horizontalSlider.setEnabled(True)
+                else:
+                    self.ui.horizontalSlider.setEnabled(False)
                 self.ui.txt_temp.setText(str(valor_temp))
                 self.ui.check_Aprendizagem.setCheckState(valor_aprendizagem)
                 self.ui.check_Economia.setCheckState(valor_economia)
@@ -3350,13 +3362,13 @@ class MyWin(QtWidgets.QMainWindow):
 
     #Funções dos Agentes
     #Controle Lâmpada
-    def lamp_control(self, input):
-        serial_port.write(b'p,',input)
-        serial_port.flush()
-        #data = serial_port.readline().decode('utf-8')
-        print("Enviou")
-
-        #serial_port.close()
+    # def lamp_control(self, input):
+    #     serial_port.write(b'p,',input)
+    #     serial_port.flush()
+    #     #data = serial_port.readline().decode('utf-8')
+    #     print("Enviou")
+    #
+    #     #serial_port.close()
 
     #Temperatura e Umidade
     def temp_umid(self):
@@ -3364,47 +3376,47 @@ class MyWin(QtWidgets.QMainWindow):
         serial_port.flush()
         data1 = serial_port.readline().decode('utf-8').replace('\r\n', '')
         data2 = serial_port.readline().decode('utf-8').replace('\r\n', '')
-
-        serial_port.close()
         return (data1, data2)
+        #serial_port.close()
+
     #Intensidade Luminosa
     def luximetro(self):
         serial_port.write(b'l')
         serial_port.flush()
         data = serial_port.readline().decode('utf-8').replace('\r\n', '').replace(',', '.')
-
-        serial_port.close()
         return (data)
+        #serial_port.close()
+
     #Controle TV
     def power_off_tv(self):
         serial_port.write(b's,2,99,3450,1700,450,400,450,1250,450,450,400,450,450,400,450,400,450,450,400,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,1300,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,1300,450,400,450,1300,400,1300,450,1300,400,1300,450,400,450,400,450,1300,450,400,450,1300,400,1300,450,1250,450,1300,450,400,450,1300,400')
         serial_port.flush()
         return("Comando Enviado para TV")
-        serial_port.close()
+        #serial_port.close()
 
     def canal_mais_tv(self):
         serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
         serial_port.flush()
         return("Comando Enviado para TV")
-        serial_port.close()
+        #serial_port.close()
 
     def canal_menos_tv(self):
         serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,1300,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,1250,450,450,450,400,450,400,450,450,400,450,400,450,450,400,450,400,450,1300,450,400,450,1250,450,450,400,1300,450,1300,400,450,450,400,450,1250,450,450,400,1300,450,400,450,1300,450,1250,450,400,450,1300,450')
         serial_port.flush()
         return("Comando Enviado para TV")
-        serial_port.close()
+        #serial_port.close()
 
     def vol_mais_tv(self):
         serial_port.write(b's,2,99,3450,1700,450,400,500,1250,450,400,450,400,450,400,500,400,450,400,450,400,450,400,450,450,450,400,450,400,450,400,500,1250,450,400,450,400,450,400,500,400,400,450,450,400,450,400,500,350,500,400,450,1250,450,400,450,450,450,400,450,400,450,400,500,350,500,400,450,400,450,400,450,400,500,400,450,400,450,400,450,1250,500,400,450,400,450,400,450,400,500,400,450,400,450,400,450,1250,500,400,450,1250,450')
         serial_port.flush()
         return("Comando Enviado para TV")
-        serial_port.close()
+        #serial_port.close()
 
     def vol_menos_tv(self):
         serial_port.write(b's,2,99,3450,1700,450,400,500,1250,450,400,450,400,500,350,500,400,450,400,450,400,450,400,500,400,450,400,450,400,450,400,500,1250,450,400,450,400,450,400,500,400,450,400,450,400,450,400,500,350,500,400,450,1250,450,400,450,450,400,450,450,400,450,400,500,350,500,400,450,400,450,1250,500,400,450,400,450,400,450,400,450,1300,450,400,450,400,450,1300,450,400,450,400,450,400,450,400,500,1250,450,400,450,1300,450')
         serial_port.flush()
         return("Comando Enviado para TV")
-        serial_port.close()
+        #serial_port.close()
 
     #Controle AR
     def power_off_ar(self):
@@ -3412,34 +3424,32 @@ class MyWin(QtWidgets.QMainWindow):
         serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
         serial_port.flush()
         return("Comando Enviado para o AR")
-        serial_port.close()
+        #serial_port.close()
 
     def temp_mais_ar(self):
         #Mudar o Codigo do Comando
         serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
         serial_port.flush()
         return("Comando Enviado para o AR")
-        serial_port.close()
+        #serial_port.close()
 
     def temp_menos_ar(self):
         #Mudar o Codigo do Comando
         serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
         serial_port.flush()
         return("Comando Enviado para o AR")
-        serial_port.close()
+        #serial_port.close()
 
     def modo_ar(self):
         #Mudar o Codigo do Comando
         serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
         serial_port.flush()
         return("Comando Enviado para o AR")
-        serial_port.close()
+        #serial_port.close()
 
 
     #Apresentação de Parâmetros na interface
     def apresenta_parametros(self):
-        #temperatura, umidade = self.agente_recepcao("temp_amb")
-        #lux= self.agente_recepcao("lux")
         umidade,temperatura=self.temp_umid()
         lux=self.luximetro()
         self.ui.txt_temp_amb.setText(temperatura + "ºC")
@@ -3498,7 +3508,7 @@ class MyWin(QtWidgets.QMainWindow):
         clock_1_sec = threading.Timer(1, self.action_1_second)
         clock_1_sec.start()
     def action_5_seconds(self):
-        #self.apresenta_parametros()
+        self.apresenta_parametros()
 
         clock_5_sec = threading.Timer(5, self.action_5_seconds)
         clock_5_sec.start()
@@ -3508,7 +3518,6 @@ class MyWin(QtWidgets.QMainWindow):
         clock_15_sec = threading.Timer(15, self.action_15_seconds)
         clock_15_sec.start()
         #clock_15_sec.join()
-    #Registro de potência
 
 
     #Agentes
