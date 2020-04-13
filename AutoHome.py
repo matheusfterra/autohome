@@ -68,7 +68,9 @@ class MyWin(QtWidgets.QMainWindow):
         self.set_configs_user()
 
         # Funcoes de Botoes e Slider de Iluminacao e Temperatura//Aba QUARTO
-        self.ui.horizontalSlider.valueChanged.connect(self.update_intensidade_iluminacao)
+        self.ui.horizontalSlider.valueChanged.connect(self.change_slider_ilum)
+        self.ui.horizontalSlider.sliderReleased.connect(self.update_intensidade_iluminacao)
+        #self.ui.horizontalSlider.bind("<ButtonRelease-1>", self.update_intensidade_iluminacao)
         self.ui.btn_on_ilum.clicked.connect(self.update_estado_iluminacao_on)
         self.ui.btn_off_ilum.clicked.connect(self.update_estado_iluminacao_off)
         self.ui.btn_temp.clicked.connect(self.update_temp)
@@ -912,17 +914,20 @@ class MyWin(QtWidgets.QMainWindow):
         msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
         msg.exec_()
 
+    def change_slider_ilum(self):
+        valor = self.ui.horizontalSlider.value()
+        self.ui.label_10.setText(str(valor))
+
     def update_intensidade_iluminacao(self):
+        valor = self.ui.horizontalSlider.value()
+        self.lamp_control(valor)
+
+        teste_conexao = 0
         try:
             conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
             # Cria um cursor:
             cursor = conexao.cursor()
             # Executa o comando:
-
-            valor = self.ui.horizontalSlider.value()
-            self.ui.label_10.setText(str(valor))
-            teste_conexao = 0
-
             cursor.execute("UPDATE configuracao_user SET intensidade_iluminacao=%s WHERE id=1", valor)
             conexao.close()
 
@@ -945,10 +950,13 @@ class MyWin(QtWidgets.QMainWindow):
 
     def update_estado_iluminacao_on(self):
         valor = self.ui.horizontalSlider.value()
-        #self.lamp_control(valor)
+        self.lamp_control(valor)
         teste_conexao = 0
 
         self.ui.horizontalSlider.setEnabled(True)
+        self.ui.btn_on_ilum.setEnabled(False)
+        self.ui.btn_off_ilum.setEnabled(True)
+
         data_atual = datetime.now()
         data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
         # Ação e Valor que recebe
@@ -992,10 +1000,14 @@ class MyWin(QtWidgets.QMainWindow):
                 teste_conexao = 1
 
     def update_estado_iluminacao_off(self):
-        #self.led_on_off("off")
+        valor = self.ui.horizontalSlider.value()
+        self.lamp_control(0)
         teste_conexao = 0
 
         self.ui.horizontalSlider.setEnabled(False)
+        self.ui.btn_off_ilum.setEnabled(False)
+        self.ui.btn_on_ilum.setEnabled(True)
+
         data_atual = datetime.now()
         data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
         # Ação e Valor que recebe
@@ -1848,7 +1860,7 @@ class MyWin(QtWidgets.QMainWindow):
             cursor = conexao.cursor()
             # Executa o comando:
             cursor.execute(
-                "SELECT intensidade_iluminacao, temperatura, aprendizagem, economia, controle,ar_condicionado, televisao, temp_banho,temp_ar,modo_ar,volume_tv,canais_tv, tendencia FROM configuracao_user  WHERE id=1")
+                "SELECT intensidade_iluminacao, temperatura, aprendizagem, economia, controle,ar_condicionado, televisao, temp_banho,temp_ar,modo_ar,volume_tv,canais_tv, tendencia,estado_iluminacao FROM configuracao_user  WHERE id=1")
 
             # Recupera o resultado:
             resultado = cursor.fetchall()
@@ -1867,13 +1879,17 @@ class MyWin(QtWidgets.QMainWindow):
                     valor_volume_tv = linha[10]
                     valor_canais_tv = linha[11]
                     tendencia=linha[12]
+                    estado_iluminacao=linha[13]
 
                 self.ui.horizontalSlider.setValue(valor_ilum)
                 self.ui.label_10.setText(str(valor_ilum))
-                if valor_ilum==True:
+                if estado_iluminacao==True:
                     self.ui.horizontalSlider.setEnabled(True)
+                    self.ui.btn_on_ilum.setEnabled(False)
                 else:
                     self.ui.horizontalSlider.setEnabled(False)
+                    self.ui.btn_off_ilum.setEnabled(False)
+
                 self.ui.txt_temp.setText(str(valor_temp))
                 self.ui.check_Aprendizagem.setCheckState(valor_aprendizagem)
                 self.ui.check_Economia.setCheckState(valor_economia)
@@ -3362,13 +3378,14 @@ class MyWin(QtWidgets.QMainWindow):
 
     #Funções dos Agentes
     #Controle Lâmpada
-    # def lamp_control(self, input):
-    #     serial_port.write(b'p,',input)
-    #     serial_port.flush()
-    #     #data = serial_port.readline().decode('utf-8')
-    #     print("Enviou")
-    #
-    #     #serial_port.close()
+    def lamp_control(self, input):
+        dados="p,{}".format(input)
+        serial_port.write(dados.encode('utf-8'))
+        serial_port.flush()
+        data = serial_port.readline().decode('utf-8')
+        print(data)
+
+        #serial_port.close()
 
     #Temperatura e Umidade
     def temp_umid(self):
