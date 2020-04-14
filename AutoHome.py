@@ -27,7 +27,7 @@ botao_info = False
 hora_inicial=datetime.now()
 hora_inicial = hora_inicial.replace(minute=00,second=00,microsecond=00)
 #Conexao com a porta SERIAL
-serial_port = serial.Serial('COM15', baudrate = 9600, writeTimeout = 0)
+#serial_port = serial.Serial('COM15', baudrate = 9600, writeTimeout = 0)
 
 class MyWin(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
@@ -997,6 +997,86 @@ class MyWin(QtWidgets.QMainWindow):
                     msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                     msg.exec_()
                     teste_conexao = 1
+
+    def agrupamento_medicoes_mensal(self):
+        ano_atual=datetime.now().year
+        mes_atual=datetime.now().month
+        try:
+            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+            # Cria um cursor:
+            cursor = conexao.cursor()
+            # Executa o comando:
+            cursor.execute(
+                "SELECT date_agrupamento_medicoes, agrupamento_medicoes FROM configuracao_user  WHERE id=1")
+
+            # Recupera o resultado:
+            resultado = cursor.fetchall()
+            if cursor.rowcount > 0:
+                for linha in resultado:
+                    date_agrupamentos = linha[0]
+                    status_agrupamento=linha[1]
+
+            if mes_atual!=date_agrupamentos.month:
+                cursor.execute(
+                    "SELECT * FROM medicao  WHERE YEAR(horario) = %s AND MONTH(horario) = %s ORDER BY horario DESC ",
+                    (date_agrupamentos.year, date_agrupamentos.month))
+                # Recupera o resultado:
+                resultado = cursor.fetchall()
+                if cursor.rowcount > 0:
+                    #print("Quantidade de medições: ", cursor.rowcount)
+                    res = np.array([[0] * 5] * cursor.rowcount,dtype='<U22')
+
+                    i = 0
+                    for linha in resultado:
+                        data = linha[1]
+
+                        res[i][0] = linha[0]
+                        res[i][1] = linha[1]
+                        res[i][2] = linha[2]
+                        res[i][3] = linha[3]
+                        res[i][4] = linha[4]
+
+                        i += 1
+
+                    agrupamentos = np.array([[0] * 5] , dtype='<U22')
+                    agrupamentos[0]=res[0]
+                    agrupamentos[0][0]=0
+
+                    n=0
+                    for x in range(0, cursor.rowcount):
+                        if x+1<cursor.rowcount:
+                            data_obj_1 = datetime.strptime(res[x][1], '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
+                            data_obj_2 = datetime.strptime(res[x+1][1], '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
+
+                            if data_obj_1.hour==data_obj_2.hour:
+                                agrupamentos[n][4]=float(agrupamentos[n][4])+float(res[x+1][4])
+                            else:
+                                agrupamentos = np.resize(agrupamentos, (len(agrupamentos) + 1, 5))
+                                agrupamentos[n+1]=res[x+1]
+                                agrupamentos[n+1][0]=n+1
+                                n+=1
+
+                    for x in range(0,cursor.rowcount):
+                        id=res[x][0]
+                        cursor.execute(
+                            "DELETE FROM medicao WHERE  id = %s ",id)
+                    print("\nMedições não condensadas, DELETADAS\n")
+
+                    for x in range(0,n+1):
+                        newdate=datetime.strptime(agrupamentos[x][1], '%Y-%m-%d %H:%M:%S')
+                        corrente=agrupamentos[x][2]
+                        tensao=agrupamentos[x][3]
+                        potencia=agrupamentos[x][4]
+                        cursor.execute("INSERT INTO medicao (horario,corrente,tensao,potencia) VALUES(%s,%s,%s,%s)",
+                                       (newdate, float(corrente), float(tensao), float(potencia)))
+                    print("Potência Condensada, registrada\n")
+
+                    data_atual = datetime.now()
+                    cursor.execute("UPDATE configuracao_user SET date_agrupamento_medicoes=%s WHERE id=1", data_atual)
+
+                    conexao.close()
+        except pymysql.err.OperationalError as e:
+            print("Error while connecting to MySQL", e)
 
     def change_slider_ilum(self):
         valor = self.ui.horizontalSlider.value()
@@ -3644,10 +3724,10 @@ class MyWin(QtWidgets.QMainWindow):
 
     def agente_gerente(self):
         self.action_1_second()
-        self.action_5_seconds()
+        #self.action_5_seconds()
         self.action_15_seconds()
         self.action_15_minutes()
-
+        self.agrupamento_medicoes_mensal()
         aprendizagem=self.check_aprendizagem()
         if aprendizagem==True:
             self.machine_learning()
