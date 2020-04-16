@@ -2104,11 +2104,14 @@ class MyWin(QtWidgets.QMainWindow):
             print("Error while connecting to MySQL", e)
 
     def machine_learning(self):
-        self.machine_learning_temperatura_ar_mais()
-        self.machine_learning_temperatura_ar_menos()
-        self.machine_learning_power_ar_off()
-        #self.machine_learning_power_ar_on()
-        self.select_graph_update_mac()
+        aprendizagem = self.check_aprendizagem()
+        if aprendizagem == True:
+
+            self.machine_learning_temperatura_ar_mais()
+            self.machine_learning_temperatura_ar_menos()
+            self.machine_learning_power_ar_off()
+            self.machine_learning_power_ar_on()
+            self.select_graph_update_mac()
 
     def machine_learning_temperatura_ar_mais(self):
         #Variaveis de Configuração
@@ -3753,9 +3756,7 @@ class MyWin(QtWidgets.QMainWindow):
         self.action_1_hour()
 
         self.agrupamento_medicoes_mensal()
-        aprendizagem=self.check_aprendizagem()
-        if aprendizagem==True:
-            self.machine_learning()
+
         #return
 
 
