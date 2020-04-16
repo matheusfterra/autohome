@@ -879,7 +879,9 @@ class MyWin(QtWidgets.QMainWindow):
                 return eixo_x, eixo_y, selecao
             # Apresenta as mensagens de erro caso as datas não forem encontradas
             else:
-
+                # Variavel para correção do BUG janela de data errada
+                auto_update_graph = True
+                
                 msg = QMessageBox()
                 msg.setIcon(QMessageBox.Critical)
 
@@ -893,8 +895,7 @@ class MyWin(QtWidgets.QMainWindow):
                 # Desabilita Botao para evitar erro.
                 self.ui.btn_info.setEnabled(False)
                 botao_info = True
-                # Variavel para correção do BUG janela de data errada
-                auto_update_graph=True
+
 
             # Finaliza a conexão
             conexao.close()
@@ -3713,7 +3714,7 @@ class MyWin(QtWidgets.QMainWindow):
     def action_15_seconds(self):
         global auto_update_graph
         self.consumo_mensal()
-
+        print(auto_update_graph)
         # Variavel para correção do BUG janela de data errada
         if auto_update_graph==False:
             selecao = self.ui.comboBox.currentText()
