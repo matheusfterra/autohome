@@ -4043,6 +4043,7 @@ class MyWin(QtWidgets.QMainWindow):
             clock_15_min.start()
     def action_1_hour(self):
         self.machine_learning()
+        self.seta_data_grafico()
 
         # Recorrencia a cada 15min
         loop_mac = threading.Timer(3600, self.action_1_hour)
