@@ -24,11 +24,12 @@ import serial
 teste_conexao = 0
 botao_info = False
 auto_update_graph=False
+tendencias=0
 #Variável usada para conferência da mudança de hora para realização do backup
 hora_inicial=datetime.now()
 hora_inicial = hora_inicial.replace(minute=00,second=00,microsecond=00)
 #Conexao com a porta SERIAL
-#serial_port = serial.Serial('COM15', baudrate = 9600, writeTimeout = 0)
+serial_port = serial.Serial('COM8', baudrate = 9600, writeTimeout = 0)
 
 class MyWin(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
@@ -881,7 +882,7 @@ class MyWin(QtWidgets.QMainWindow):
             else:
                 # Variavel para correção do BUG janela de data errada
                 auto_update_graph = True
-                
+
                 msg = QMessageBox()
                 msg.setIcon(QMessageBox.Critical)
 
@@ -906,13 +907,35 @@ class MyWin(QtWidgets.QMainWindow):
             print("Error while connecting to MySQL", e)
 
     def backup(self):
+        ano_atual = datetime.now().year
+        mes_atual = datetime.now().month
+        dia_atual = datetime.now().day
+        try:
+            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+            # Cria um cursor:
+            cursor = conexao.cursor()
+            # Executa o comando:
+            cursor.execute(
+                "SELECT date_backup FROM configuracao_user  WHERE id=1")
 
-        saida = backup()
+            # Recupera o resultado:
+            resultado = cursor.fetchall()
+            if cursor.rowcount > 0:
+                for linha in resultado:
+                    date_backup = linha[0]
+            # Se o mês atual for diferente do ultimo mes da condensação, significa que se passou 1 mês e é hora de executar novamente,
+            if dia_atual != date_backup.day:
+                saida = backup()
+                self.ui.textBrowser.append(saida)
 
-        self.ui.textBrowser.append(saida)
+                # Atualização da data atual para comparação
+                data_atual = datetime.now()
+                # Atualização da data atual no BD
+                cursor.execute("UPDATE configuracao_user SET date_agrupamento_medicoes=%s WHERE id=1", data_atual)
 
-        vv = threading.Timer(3600, self.backup)
-        vv.start()
+                conexao.close()
+        except pymysql.err.OperationalError as e:
+            print("Error while connecting to MySQL", e)
 
     def restaurar(self):
         msg = QMessageBox()
@@ -1012,9 +1035,10 @@ class MyWin(QtWidgets.QMainWindow):
                     msg.exec_()
                     teste_conexao = 1
 
-    def agrupamento_medicoes_mensal(self):
+    def agrupamento_medicoes_diario(self):
         ano_atual=datetime.now().year
         mes_atual=datetime.now().month
+        dia_atual=datetime.now().day
         try:
             conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
             # Cria um cursor:
@@ -1030,10 +1054,10 @@ class MyWin(QtWidgets.QMainWindow):
                     date_agrupamentos = linha[0]
                     status_agrupamento=linha[1]
             #Se o mês atual for diferente do ultimo mes da condensação, significa que se passou 1 mês e é hora de executar novamente,
-            if mes_atual!=date_agrupamentos.month:
+            if dia_atual!=date_agrupamentos.day:
                 cursor.execute(
-                    "SELECT * FROM medicao  WHERE YEAR(horario) = %s AND MONTH(horario) = %s ORDER BY horario DESC ",
-                    (date_agrupamentos.year, date_agrupamentos.month))
+                    "SELECT * FROM medicao  WHERE YEAR(horario) = %s AND MONTH(horario) = %s AND DAY(horario) = %s ORDER BY horario DESC ",
+                    (date_agrupamentos.year, date_agrupamentos.month, date_agrupamentos.day))
                 # Recupera o resultado:
                 resultado = cursor.fetchall()
                 if cursor.rowcount > 0:
@@ -1992,6 +2016,13 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.exec_()
                 teste_conexao = 1
 
+        if valor == True:
+            print("Modo Controle Habilitado")
+            self.check_tendencias()
+            self.auto_tendencias()
+        else:
+            print("Modo Controle Desabilitado")
+
     def update_Tendencia(self):
         valor = self.ui.txt_tendencia.text()
         teste_conexao = 0
@@ -2113,6 +2144,10 @@ class MyWin(QtWidgets.QMainWindow):
             self.machine_learning_power_ar_off()
             self.machine_learning_power_ar_on()
             self.select_graph_update_mac()
+
+        controle= self.check_controle()
+        if controle == True:
+            self.check_tendencias()
 
     def machine_learning_temperatura_ar_mais(self):
         #Variaveis de Configuração
@@ -3558,6 +3593,12 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.MplWidget_2.canvas.axes.grid()
         self.ui.MplWidget_2.canvas.draw()
 
+    def controle(self):
+        controle = self.check_controle()
+        if controle == True:
+            self.auto_tendencias()
+
+
     #Funções dos Agentes
     #Controle Lâmpada
     def lamp_control(self, input):
@@ -3577,6 +3618,14 @@ class MyWin(QtWidgets.QMainWindow):
         data2 = serial_port.readline().decode('utf-8').replace('\r\n', '')
         return (data1, data2)
         #serial_port.close()
+
+    # Temperatura e Umidade
+    def temp_agua(self):
+        serial_port.write(b'a')
+        serial_port.flush()
+        data1 = serial_port.readline().decode('utf-8').replace('\r\n', '')
+        return (data1)
+        # serial_port.close()
 
     #Intensidade Luminosa
     def luximetro(self):
@@ -3658,6 +3707,7 @@ class MyWin(QtWidgets.QMainWindow):
         # tt = threading.Timer(1, self.apresenta_parametros)
         # tt.start()
 
+    #Verifica Aprendizagem
     def check_aprendizagem(self):
         #Checagem para chamar Machine Learning
         teste_conexao = 0
@@ -3698,7 +3748,262 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.exec_()
                 teste_conexao = 1
 
-    #Check per second
+    #Automação e Controle
+    def check_controle(self):
+        #Checagem para chamar Machine Learning
+        teste_conexao = 0
+        try:
+            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+            # Cria um cursor:
+            cursor = conexao.cursor()
+            # Executa o comando:
+            cursor.execute("SELECT controle FROM configuracao_user  WHERE id=1")
+
+            # Recupera o resultado:
+            resultado = cursor.fetchall()
+            if cursor.rowcount > 0:
+                for linha in resultado:
+                    controle = linha[0]
+
+            if controle==True:
+                self.ui.txt_modo_aprendizagem.setText("Modo Controle Habilitado")
+            else:
+                self.ui.txt_modo_aprendizagem.setText("Modo Controle Desabilitado")
+            return controle
+
+
+        except pymysql.err.OperationalError as e:
+            if teste_conexao == 0:
+                print("Error while connecting to MySQL", e)
+
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
+
+                msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                msg.setWindowTitle("Erro na Inicialização")
+                msg.setDetailedText(
+                    "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+                teste_conexao = 1
+
+    def check_tendencias(self):
+        # Checagem para chamar Machine Learning
+        global tendencias
+        teste_conexao = 0
+        try:
+            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+            # Cria um cursor:
+            cursor = conexao.cursor()
+            # Executa o comando:
+            cursor.execute("SELECT * FROM tendencias")
+
+            # Recupera o resultado:
+            resultado = cursor.fetchall()
+            i=0
+            res = np.array([[0] * 5] * cursor.rowcount, dtype='<U22')
+            if cursor.rowcount > 0:
+                for linha in resultado:
+                    res[i][0] = linha[0]
+                    res[i][1]=linha[1]
+                    res[i][2]=linha[2]
+                    res[i][3]=linha[3]
+                    res[i][4]=linha[4]
+
+                    i+=1
+
+            tendencias = np.array([[0] * 3] * cursor.rowcount, dtype='<U22')
+
+            for x in range(0,cursor.rowcount):
+                tendencias[x][0]=res[x][2]
+                tendencias[x][1]=res[x][1]
+                tendencias[x][2]=res[x][3]
+
+            #Chama a função Auto_tendencias para executar as tarefas
+            #self.auto_tendencias()
+
+        except pymysql.err.OperationalError as e:
+            if teste_conexao == 0:
+                print("Error while connecting to MySQL", e)
+
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
+
+                msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                msg.setWindowTitle("Erro na Inicialização")
+                msg.setDetailedText(
+                    "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+                teste_conexao = 1
+
+    def auto_tendencias(self):
+        #Pegando a hora atual
+        data_atual=datetime.now()
+        horario_atual = (data_atual).strftime('%H:%M:%S')  # Faço o Somatorio de TIMES e converto para STRING
+        data_atual = datetime.strptime(horario_atual, '%H:%M:%S')  # Converto novamente para OBJETO
+
+        print("Verificando atividades agendadas e a próxima verificação é em:{}".format((data_atual + (timedelta(minutes=5)))))
+
+        #Pegando o numero do dia
+        dia_da_semana=datetime.now().weekday()
+        #For para conferir cada uma das tendencias e ver se está no horário de acionar
+        for x in range(0,len(tendencias)-1):
+            data_obj = datetime.strptime(tendencias[x][0], '%Y-%m-%d %H:%M:%S')
+            horario = (data_obj).strftime('%H:%M:%S')  # Faço o Somatorio de TIMES e converto para STRING
+            data_obj = datetime.strptime(horario, '%H:%M:%S')  # Converto novamente para OBJETO
+            dia_tendencia=int(tendencias[x][2])
+            #Soma 5min à hora do sistema, para verificar se está no range
+            data_comparativa=(data_atual + (timedelta(minutes=5)))
+            #Se a tendencia é maior que a hora atual e menor ou igual a hora daqui 5min
+
+
+            if data_atual<=data_obj<=data_comparativa and dia_da_semana==dia_tendencia:
+                #Atribui a ação
+                acao=tendencias[x][1]
+                #Verifica a ação e entra em cada uma das funções
+                if acao == "Power-Ar-On":
+                    #Pega o valor do botao para conferir se ja esta ligado
+                    valor = self.ui.btn_power_ar.text()
+                    if valor == 'Ligar':
+                        #Executa a ação
+                        self.power_off_ar
+                        #Valor que vai para o UPDATE
+                        valor = True
+                        #Atualiza o campo de texto
+                        self.ui.btn_power_ar.setText("Desligar")
+                        teste_conexao = 0
+                        try:
+                            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+                            # Cria um cursor:
+                            cursor = conexao.cursor()
+                            # Executa o comando:
+                            cursor.execute("UPDATE configuracao_user SET ar_condicionado=%s WHERE id=1", valor)
+                            conexao.close()
+                        except pymysql.err.OperationalError as e:
+                            if teste_conexao == 0:
+                                print("Error while connecting to MySQL", e)
+
+                                msg = QMessageBox()
+                                msg.setIcon(QMessageBox.Critical)
+
+                                msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                                msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                                msg.setWindowTitle("Erro em executar a ação:", acao)
+                                msg.setDetailedText(
+                                    "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                                msg.exec_()
+                                teste_conexao = 1
+                        print("A ação {} foi executada!".format(acao))
+                    else:
+                        # Caso o ar já esteja ligado
+                        print("O Ar já se encontra Ligado!")
+##################EXECUTA O MESMO CODIGO ACIMA. VERIFICAR COMENTÁRIOS#########################
+                elif acao=="Power-Ar-Off":
+                    valor = self.ui.btn_power_ar.text()
+                    if valor == 'Desligar':
+                        self.power_off_ar()
+                        valor = False
+                        self.ui.btn_power_ar.setText("Ligar")
+                        teste_conexao = 0
+                        try:
+                            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+                            # Cria um cursor:
+                            cursor = conexao.cursor()
+                            # Executa o comando:
+                            cursor.execute("UPDATE configuracao_user SET ar_condicionado=%s WHERE id=1", valor)
+                            conexao.close()
+                        except pymysql.err.OperationalError as e:
+                            if teste_conexao == 0:
+                                print("Error while connecting to MySQL", e)
+
+                                msg = QMessageBox()
+                                msg.setIcon(QMessageBox.Critical)
+
+                                msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                                msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                                msg.setWindowTitle("Erro em executar a ação:", acao)
+                                msg.setDetailedText(
+                                    "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                                msg.exec_()
+                                teste_conexao = 1
+                        print("A ação {} foi executada!".format(acao))
+                    else:
+                        print("O Ar já se encontra Desligado!")
+
+                elif acao=="Temperatura-Ar-Mais":
+                    valor = self.ui.btn_power_ar.text()
+                    if valor == 'Desligar':
+                        self.temp_mais_ar()
+                        valor = int(self.ui.text_temp_ar.text()) + 1
+                        self.ui.text_temp_ar.setText(str(valor))
+                        teste_conexao = 0
+                        try:
+                            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+                            # Cria um cursor:
+                            cursor = conexao.cursor()
+                            # Executa o comando:
+                            cursor.execute("UPDATE configuracao_user SET temp_ar=%s WHERE id=1", valor)
+                            conexao.close()
+                        except pymysql.err.OperationalError as e:
+                            if teste_conexao == 0:
+                                print("Error while connecting to MySQL", e)
+
+                                msg = QMessageBox()
+                                msg.setIcon(QMessageBox.Critical)
+
+                                msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                                msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                                msg.setWindowTitle("Erro em executar a ação:", acao)
+                                msg.setDetailedText(
+                                    "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                                msg.exec_()
+                                teste_conexao = 1
+                        print("A ação {} foi executada!".format(acao))
+                    else:
+                        print("O Ar se encontra Desligado!")
+
+                elif acao=="Temperatura-Ar-Menos":
+                    valor = self.ui.btn_power_ar.text()
+                    if valor == 'Desligar':
+                        self.temp_menos_ar()
+                        valor = int(self.ui.text_temp_ar.text()) - 1
+                        self.ui.text_temp_ar.setText(str(valor))
+                        teste_conexao = 0
+                        try:
+                            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+                            # Cria um cursor:
+                            cursor = conexao.cursor()
+                            # Executa o comando:
+                            cursor.execute("UPDATE configuracao_user SET temp_ar=%s WHERE id=1", valor)
+                            conexao.close()
+                        except pymysql.err.OperationalError as e:
+                            if teste_conexao == 0:
+                                print("Error while connecting to MySQL", e)
+
+                                msg = QMessageBox()
+                                msg.setIcon(QMessageBox.Critical)
+
+                                msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                                msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                                msg.setWindowTitle("Erro em executar a ação:", acao)
+                                msg.setDetailedText(
+                                    "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                                msg.exec_()
+                                teste_conexao = 1
+                        print("A ação {} foi executada!".format(acao))
+                    else:
+                        print("O Ar se encontra Desligado!")
+
+
+
+    #Threads
     def action_1_second(self):
         self.minha_data()
 
@@ -3714,7 +4019,7 @@ class MyWin(QtWidgets.QMainWindow):
     def action_15_seconds(self):
         global auto_update_graph
         self.consumo_mensal()
-        print(auto_update_graph)
+
         # Variavel para correção do BUG janela de data errada
         if auto_update_graph==False:
             selecao = self.ui.comboBox.currentText()
@@ -3724,6 +4029,10 @@ class MyWin(QtWidgets.QMainWindow):
 
         clock_15_sec = threading.Timer(15, self.action_15_seconds)
         clock_15_sec.start()
+    def action_5_minutes(self):
+        self.controle()
+        clock_5_min = threading.Timer(300, self.action_5_minutes)
+        clock_5_min.start()
     def action_15_minutes(self):
         self.agrupamento_medicoes()
         try:
@@ -3738,7 +4047,12 @@ class MyWin(QtWidgets.QMainWindow):
         # Recorrencia a cada 15min
         loop_mac = threading.Timer(3600, self.action_1_hour)
         loop_mac.start()
+    def action_1_day(self):
+        self.agrupamento_medicoes_diario()
+        self.backup()
 
+        vv = threading.Timer(3600, self.action_1_day)
+        vv.start()
 
     #Agentes
     def agente_recepcao(self, modo):
@@ -3748,15 +4062,20 @@ class MyWin(QtWidgets.QMainWindow):
         elif modo=="lux":
             lux=self.luximetro()
             return lux
+        elif modo=="temp_agua":
+            temp_agua=self.temp_agua()
+            return temp_agua
 
     def agente_gerente(self):
         self.action_1_second()
-        #self.action_5_seconds()
+        self.action_5_seconds()
         self.action_15_seconds()
         self.action_15_minutes()
         self.action_1_hour()
+        self.action_5_minutes()
+        self.action_1_day()
 
-        self.agrupamento_medicoes_mensal()
+        #self.agrupamento_medicoes_mensal()
 
         #return
 
