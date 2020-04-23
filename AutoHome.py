@@ -4218,6 +4218,29 @@ class MyWin(QtWidgets.QMainWindow):
         else:
             print("SET: %.1f LUX | ATUAL: %.1f LUX | PWM: %s %%" % (float(target), float(temp), float(targetPwm)))
 
+    def verify_pid_lamp(self):
+        global target_lamp
+        global verify_pid_lamp
+        global presenca
+        print("Há presença no ambiente? ", presenca)
+
+        # Checa a presença ou não de presença
+        self.check_pir1()
+        self.check_pir2()
+        # GET controle e economia
+        controle = self.check_controle()
+        economia = self.check_economia()
+        # Se controle estiver habilitado
+        if controle == True:
+            # Se houver Presença, Box Economia estiver setado Executa a automação
+            if presenca == True and economia == True and verify_pid_lamp == True:
+                self.auto_iluminacao()
+            if presenca == True and economia == False and verify_pid_lamp == True:
+                # Economia desabilitada, logo, pode setar PWM no máximo
+                return
+        # Configuração inicial
+        if verify_pid_lamp == False and controle == True and economia == True:
+            self.configuracao_pid("Iluminação", target_lamp)
 
     #Threads
     def action_1_second(self):
@@ -4227,28 +4250,8 @@ class MyWin(QtWidgets.QMainWindow):
         clock_1_sec = threading.Timer(1, self.action_1_second)
         clock_1_sec.start()
     def action_5_seconds(self):
-        global target_lamp
-        global verify_pid_lamp
-        global presenca
-        print("Há presença no ambiente? ",presenca)
         self.apresenta_parametros()
-        #Checa a presença ou não de presença
-        self.check_pir1()
-        self.check_pir2()
-        #GET controle e economia
-        controle=self.check_controle()
-        economia=self.check_economia()
-        #Se controle estiver habilitado
-        if controle==True:
-            #Se houver Presença, Box Economia estiver setado Executa a automação
-            if presenca==True and economia==True and verify_pid_lamp==True:
-                self.auto_iluminacao()
-            if presenca == True and economia == False and verify_pid_lamp == True:
-                #Economia desabilitada, logo, pode setar PWM no máximo
-                return
-        #Configuração inicial
-        if verify_pid_lamp==False and controle==True and economia==True:
-            self.configuracao_pid("Iluminação",target_lamp)
+        self.verify_pid_lamp()
 
         clock_5_sec = threading.Timer(5, self.action_5_seconds)
         clock_5_sec.start()
