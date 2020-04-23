@@ -35,6 +35,7 @@ pid_lamp=0
 verify_pir1=False
 verify_pir2=False
 presenca=False
+verify_auto_lamp=False
 time_last=datetime.now()
 time_last2=datetime.now()
 
@@ -90,8 +91,8 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.horizontalSlider.valueChanged.connect(self.change_slider_ilum)
         self.ui.horizontalSlider.sliderReleased.connect(self.update_intensidade_iluminacao)
         #self.ui.horizontalSlider.bind("<ButtonRelease-1>", self.update_intensidade_iluminacao)
-        self.ui.btn_on_ilum.clicked.connect(self.update_estado_iluminacao_on)
-        self.ui.btn_off_ilum.clicked.connect(self.update_estado_iluminacao_off)
+        self.ui.btn_on_ilum.clicked.connect(self.btn_on_lamp)
+        self.ui.btn_off_ilum.clicked.connect(self.btn_off_lamp)
         self.ui.btn_temp.clicked.connect(self.update_temp)
         self.ui.btn_temp_agua_economic.clicked.connect(self.update_temp_banho_economic)
         self.ui.btn_temp_agua_normal.clicked.connect(self.update_temp_banho_normal)
@@ -1173,7 +1174,22 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.exec_()
                 teste_conexao = 1
 
+    def btn_on_lamp(self):
+        #Atualiza estado do Check Controle
+        self.ui.check_Controle.setCheckState(False)
+        self.update_Controle()
+        #Atualiza estado da Lâmpada
+        self.update_estado_iluminacao_on()
+
+    def btn_off_lamp(self):
+        #Desabilita o Check Control
+        self.ui.check_Controle.setCheckState(False)
+        self.update_Controle()
+        #Atualiza estado da Lâmpada
+        self.update_estado_iluminacao_off()
+
     def update_estado_iluminacao_on(self):
+
         controle=self.check_controle()
         if controle==False:
             valor = self.ui.horizontalSlider.value()
@@ -4291,9 +4307,12 @@ class MyWin(QtWidgets.QMainWindow):
         targetPwm = max(min(int(targetPwm), 100), 0)
 
         if modo == "Iluminação":
+            #Seta o PWM para lâmpada
             self.lamp_control(targetPwm)
+            #Capta se a Lâmpada estava desligada
             state_lamp=self.ui.txt_state_lamp.text()
             print("SET: %.1f LUX | ATUAL: %.1f LUX | PWM: %s %%" % (float(target), float(lux), float(targetPwm)))
+            #Se o PID já tiver sido configurado, e a lâmpada estava desligada, atualiza a Lâmpada
             if verify_pid_lamp==True and state_lamp=="Desligada":
                 self.update_estado_iluminacao_on()
         else:
@@ -4319,17 +4338,20 @@ class MyWin(QtWidgets.QMainWindow):
         # GET controle e economia
         controle = self.check_controle()
         economia = self.check_economia()
-        state_lamp=self.ui.txt_state_lamp.text()
         # Se controle estiver habilitado
         if controle == True:
             # Se houver Presença, Box Economia estiver setado Executa a automação
             if presenca == True and economia == True and verify_pid_lamp == True:
                 self.auto_iluminacao()
-            if state_lamp=="Ligada" and presenca==False and economia == True and verify_pid_lamp == True:
-                self.update_estado_iluminacao_off()
+            if presenca==False and economia == True and verify_pid_lamp == True:
+                #Esse IF garante que a lâmpada só vai executar o desligamento, se estiver ligada anteriormente
+                if self.ui.txt_state_lamp.text()=="Ligada":
+                    self.update_estado_iluminacao_off()
+
             if presenca == True and economia == False and verify_pid_lamp == True:
                 # Economia desabilitada, logo, pode setar PWM no máximo
                 return
+
         # Configuração inicial
         if verify_pid_lamp == False and controle == True and economia == True:
             self.configuracao_pid("Iluminação", target_lamp)
