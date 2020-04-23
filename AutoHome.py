@@ -20,11 +20,25 @@ import sys
 from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT as NavigationToolbar)
 import random
 import serial
+import PID
 
 teste_conexao = 0
 botao_info = False
 auto_update_graph=False
 tendencias=0
+config_pid_lamp=False
+config_pid_banho=False
+verify_pid_lamp=False
+target_lamp=0
+target_banho=0
+pid_lamp=0
+verify_pir1=False
+verify_pir2=False
+presenca=False
+time_last=datetime.now()
+time_last2=datetime.now()
+
+
 #Variável usada para conferência da mudança de hora para realização do backup
 hora_inicial=datetime.now()
 hora_inicial = hora_inicial.replace(minute=00,second=00,microsecond=00)
@@ -100,6 +114,7 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.check_Economia.stateChanged.connect(self.update_Economia)
         self.ui.check_Controle.stateChanged.connect(self.update_Controle)
         self.ui.btn_tendencia.clicked.connect(self.update_Tendencia)
+
 
 
         #Chama agente gerente
@@ -1247,6 +1262,7 @@ class MyWin(QtWidgets.QMainWindow):
 
             msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
             msg.exec_()
+
         # Caso a Conexão dê errado:
         except pymysql.err.OperationalError as e:
             if teste_conexao == 0:
@@ -1948,7 +1964,6 @@ class MyWin(QtWidgets.QMainWindow):
 
     def update_Economia(self):
         valor = self.ui.check_Economia.checkState()
-
         teste_conexao = 0
         if valor == 1 or valor == 2:
             valor = True
@@ -2074,7 +2089,7 @@ class MyWin(QtWidgets.QMainWindow):
             cursor = conexao.cursor()
             # Executa o comando:
             cursor.execute(
-                "SELECT intensidade_iluminacao, temperatura, aprendizagem, economia, controle,ar_condicionado, televisao, temp_banho,temp_ar,modo_ar,volume_tv,canais_tv, tendencia,estado_iluminacao FROM configuracao_user  WHERE id=1")
+                "SELECT intensidade_iluminacao, temperatura, aprendizagem, economia, controle,ar_condicionado, televisao, temp_banho,temp_ar,modo_ar,volume_tv,canais_tv, tendencia,estado_iluminacao,lux FROM configuracao_user  WHERE id=1")
 
             # Recupera o resultado:
             resultado = cursor.fetchall()
@@ -2094,6 +2109,7 @@ class MyWin(QtWidgets.QMainWindow):
                     valor_canais_tv = linha[11]
                     tendencia=linha[12]
                     estado_iluminacao=linha[13]
+                    lux=linha[14]
 
                 self.ui.horizontalSlider.setValue(valor_ilum)
                 self.ui.label_10.setText(str(valor_ilum))
@@ -2126,12 +2142,13 @@ class MyWin(QtWidgets.QMainWindow):
                     self.ui.text_modo_ar.setText("Turbo")
                 else:
                     self.ui.text_modo_ar.setText("Normal")
-
             else:
                 print("Dados Insuficientes no Banco de Dados")
 
             # Finaliza a conexão
             conexao.close()
+
+
         except pymysql.err.OperationalError as e:
             print("Error while connecting to MySQL", e)
 
@@ -3635,6 +3652,21 @@ class MyWin(QtWidgets.QMainWindow):
         return (data)
         #serial_port.close()
 
+    # Sensores de Movimento
+    def pir1(self):
+        serial_port.write(b'm')
+        serial_port.flush()
+        data = serial_port.readline().decode('utf-8').replace('\r\n', '').replace(',', '.')
+        return (data)
+            # serial_port.close()
+    def pir2(self):
+        #Registrar esse comando no Arduino quando instalar o segundo sensor
+        serial_port.write(b'm2')
+        serial_port.flush()
+        data = serial_port.readline().decode('utf-8').replace('\r\n', '').replace(',', '.')
+        return (data)
+            # serial_port.close()
+
     #Controle TV
     def power_off_tv(self):
         serial_port.write(b's,2,99,3450,1700,450,400,450,1250,450,450,400,450,450,400,450,400,450,450,400,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,1300,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,1300,450,400,450,1300,400,1300,450,1300,400,1300,450,400,450,400,450,1300,450,400,450,1300,400,1300,450,1250,450,1300,450,400,450,1300,400')
@@ -3707,7 +3739,7 @@ class MyWin(QtWidgets.QMainWindow):
         # tt = threading.Timer(1, self.apresenta_parametros)
         # tt.start()
 
-    #Verifica Aprendizagem
+    #Automação e Controle
     def check_aprendizagem(self):
         #Checagem para chamar Machine Learning
         teste_conexao = 0
@@ -3748,7 +3780,6 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.exec_()
                 teste_conexao = 1
 
-    #Automação e Controle
     def check_controle(self):
         #Checagem para chamar Machine Learning
         teste_conexao = 0
@@ -3770,6 +3801,45 @@ class MyWin(QtWidgets.QMainWindow):
             else:
                 self.ui.txt_modo_aprendizagem.setText("Modo Controle Desabilitado")
             return controle
+
+
+        except pymysql.err.OperationalError as e:
+            if teste_conexao == 0:
+                print("Error while connecting to MySQL", e)
+
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
+
+                msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                msg.setWindowTitle("Erro na Inicialização")
+                msg.setDetailedText(
+                    "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+                teste_conexao = 1
+
+    def check_economia(self):
+        #Checagem para chamar Machine Learning
+        teste_conexao = 0
+        try:
+            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+            # Cria um cursor:
+            cursor = conexao.cursor()
+            # Executa o comando:
+            cursor.execute("SELECT economia FROM configuracao_user  WHERE id=1")
+
+            # Recupera o resultado:
+            resultado = cursor.fetchall()
+            if cursor.rowcount > 0:
+                for linha in resultado:
+                    economia = linha[0]
+
+            if economia==True:
+                self.ui.txt_modo_aprendizagem.setText("Modo Economia Habilitado")
+            else:
+                self.ui.txt_modo_aprendizagem.setText("Modo Economia Desabilitado")
+            return economia
 
 
         except pymysql.err.OperationalError as e:
@@ -3838,6 +3908,72 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
                 teste_conexao = 1
+
+    def check_pir1(self):
+        #Função para Presença IN
+        global verify_pir1
+        global presenca
+        global time_last
+        global time_last2
+        #Variavel de verificação se é o primeiro loop
+        loop1=False
+        #Pega o horário atual para verificar se passaram 5s do PIR2
+        real_time=datetime.now()
+        #Se houver presença e se tiver passado mais de 10s do horário PIR2
+        if presenca==False and real_time-time_last2>timedelta(seconds=10):
+            #Se não tiver terminado a ultima verificação, nao começa uma nova
+            if verify_pir1==False:
+                #Capta valor do sensor 1
+                pir1 = self.pir1()
+                #Se for captado
+                if pir1=="1":
+                    #Seta como inciado o processo
+                    verify_pir1 = True
+                    ##Trocar pelo comando do sensor
+                    #pir2=.self.pir2()
+                    pir2="1"
+                    #Se o sensor 2 estiver acionado
+                    if pir2=="1":
+                        #Há presença no comodo
+                        presenca=True
+                        #Se o loop ocorrer, seta o novo horario
+                        if loop1==False:
+                            time_last=datetime.now()
+                            loop1=True
+                #Finaliza o loop
+                verify_pir1=False
+                loop1=False
+
+        print(presenca)
+
+    def check_pir2(self):
+        #Função para Presença OUT
+        #VERIFICAR CODIGO CORRIGIDO ACIMA
+        global verify_pir2
+        global presenca
+        global time_last
+        global time_last2
+        loop1=True
+        time_atual=datetime.now()
+        if presenca==True and time_atual-time_last>timedelta(seconds=10):
+            if verify_pir2==False:
+                ##Trocar pelo comando do sensor
+                #pir2 = self.pir2()
+                pir2="1"
+                pir1=self.pir1()
+                #if pir2=="1":
+                if pir1=="1":
+                    verify_pir2 = True
+                    pir1=self.pir1()
+                    if pir1=="1":
+                        presenca=False
+                        if loop1 ==True:
+                            time_last2=datetime.now()
+                            loop1=False
+
+                verify_pir2=False
+                loop1=True
+        print(presenca)
 
     def auto_tendencias(self):
         #Pegando a hora atual
@@ -4001,6 +4137,77 @@ class MyWin(QtWidgets.QMainWindow):
                     else:
                         print("O Ar se encontra Desligado!")
 
+    def auto_iluminacao(self):
+        global verify_pid_lamp
+        global target_lamp
+
+        controle=self.check_controle()
+        economia=self.check_economia()
+        if controle==True and economia==True:
+            try:
+                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+                # Cria um cursor:
+                cursor = conexao.cursor()
+                # Executa o comando:
+                cursor.execute("SELECT lux FROM configuracao_user  WHERE id=1")
+
+                # Recupera o resultado:
+                resultado = cursor.fetchall()
+                if cursor.rowcount > 0:
+                    for linha in resultado:
+                        lux = linha[0]
+                    target_lamp = lux
+                    verify_pid_lamp = True
+                    self.configuracao_pid("Iluminação", lux)
+
+            except pymysql.err.OperationalError as e:
+                print("Error while connecting to MySQL", e)
+
+    #Configuração PID
+    def configuracao_pid(self,modo,target):
+        global config_pid_banho
+        global config_pid_lamp
+        global pid_lamp
+
+        kp=1.4
+        ki=0.4
+        kd=0.0
+        if modo=="Iluminação":
+            if config_pid_lamp == False:
+                pid_lamp = PID.PID(kp, ki, kd)
+                pid_lamp.SetPoint = target
+                pid_lamp.setSampleTime(1)
+                config_pid_lamp = True
+            pid_lamp.SetPoint = target
+            pid_lamp.setKp(kp)
+            pid_lamp.setKi(ki)
+            pid_lamp.setKd(kd)
+            lux= self.luximetro()
+            pid_lamp.update(float(lux))
+            targetPwm = pid_lamp.output
+
+        else:
+            if config_pid_banho == False:
+                pid_banho = PID.PID(kp, ki, kd)
+                pid_banho.SetPoint = target
+                pid_banho.setSampleTime(1)
+                config_pid_banho = True
+
+            pid_banho.SetPoint = target
+            pid_banho.setKp(kp)
+            pid_banho.setKi(ki)
+            pid_banho.setKd(kd)
+            temp = self.temp_agua()
+            pid_banho.update(float(temp))
+            targetPwm = pid_banho.output
+
+        targetPwm = max(min(int(targetPwm), 100), 0)
+        # lamp_control(targetPwm)
+        if modo == "Iluminação":
+            print("SET: %.1f LUX | ATUAL: %.1f LUX | PWM: %s %%" % (float(target), float(lux), float(targetPwm)))
+        else:
+            print("SET: %.1f LUX | ATUAL: %.1f LUX | PWM: %s %%" % (float(target), float(temp), float(targetPwm)))
+
 
 
     #Threads
@@ -4012,7 +4219,25 @@ class MyWin(QtWidgets.QMainWindow):
         clock_1_sec = threading.Timer(1, self.action_1_second)
         clock_1_sec.start()
     def action_5_seconds(self):
+        global target_lamp
+        global verify_pid_lamp
         self.apresenta_parametros()
+
+        self.check_pir1()
+        self.check_pir2()
+
+        controle=self.check_controle()
+        economia=self.check_economia()
+
+        if controle==True:
+            presenca=self.check_pir1()
+            if presenca=="1" and economia==True and verify_pid_lamp==False:
+                self.auto_iluminacao()
+            if presenca == "1" and economia == False and verify_pid_lamp == False:
+                #Posso enviar parametro pra auto_iluminacao para ver se deve ser economia ou nao
+                return
+        if verify_pid_lamp==True and controle==True and economia==True:
+            self.configuracao_pid("Iluminação",target_lamp)
 
         clock_5_sec = threading.Timer(5, self.action_5_seconds)
         clock_5_sec.start()
@@ -4050,7 +4275,7 @@ class MyWin(QtWidgets.QMainWindow):
         loop_mac.start()
     def action_1_day(self):
         self.agrupamento_medicoes_diario()
-        self.backup()
+        #self.backup()
 
         vv = threading.Timer(3600, self.action_1_day)
         vv.start()
@@ -4079,7 +4304,7 @@ class MyWin(QtWidgets.QMainWindow):
         #self.agrupamento_medicoes_mensal()
 
         #return
-
+#####Backup está fazendo sempre que inicia o programa
 
 
 if __name__ == "__main__":
