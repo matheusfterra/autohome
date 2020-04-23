@@ -4269,6 +4269,45 @@ class MyWin(QtWidgets.QMainWindow):
             self.update_estado_iluminacao_on()
             verify_lamp_economic=True
 
+    def auto_ar_economic(self):
+        economia=self.check_economia()
+        controle=self.check_controle()
+        state_ar=self.ui.btn_power_ar.text()
+        if state_ar=="Desligar":
+            state_ar=True
+        else:
+            state_ar=False
+        if economia==True and controle==True and datetime.now().hour==4 and state_ar==True:
+            self.power_off_ar()
+            valor = False
+            self.ui.btn_power_ar.setText("Ligar")
+            teste_conexao = 0
+            try:
+                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+                # Cria um cursor:
+                cursor = conexao.cursor()
+                # Executa o comando:
+                cursor.execute("UPDATE configuracao_user SET ar_condicionado=%s WHERE id=1", valor)
+                conexao.close()
+            except pymysql.err.OperationalError as e:
+                if teste_conexao == 0:
+                    print("Error while connecting to MySQL", e)
+
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Critical)
+
+                    msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                    msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                    msg.setWindowTitle("Erro ao Desligar o Ar Condicionado")
+                    msg.setDetailedText(
+                        "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                    msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                    msg.exec_()
+                    teste_conexao = 1
+            print("O Ar Condicionado foi desligado pelo modo Economia de Energia")
+        else:
+            print("Não é possivel desligá-lo")
+
     #Configuração PID
     def configuracao_pid(self,modo,target):
         global config_pid_banho
@@ -4434,6 +4473,7 @@ class MyWin(QtWidgets.QMainWindow):
         self.action_1_hour()
         self.action_5_minutes()
         self.action_1_day()
+        self.auto_ar_economic()
 
         #self.agrupamento_medicoes_mensal()
 
