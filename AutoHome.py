@@ -93,7 +93,8 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.btn_on_ilum.clicked.connect(self.update_estado_iluminacao_on)
         self.ui.btn_off_ilum.clicked.connect(self.update_estado_iluminacao_off)
         self.ui.btn_temp.clicked.connect(self.update_temp)
-        self.ui.btn_temp_agua.clicked.connect(self.update_temp_banho)
+        self.ui.btn_temp_agua_economic.clicked.connect(self.update_temp_banho_economic)
+        self.ui.btn_temp_agua_normal.clicked.connect(self.update_temp_banho_normal)
         self.ui.btn_temp_mais.clicked.connect(self.update_temp_ar_mais)
         self.ui.btn_temp_menos.clicked.connect(self.update_temp_ar_menos)
         self.ui.btn_vol_mais.clicked.connect(self.update_volume_mais)
@@ -1173,13 +1174,18 @@ class MyWin(QtWidgets.QMainWindow):
                 teste_conexao = 1
 
     def update_estado_iluminacao_on(self):
-        valor = self.ui.horizontalSlider.value()
-        self.lamp_control(valor)
+        controle=self.check_controle()
+        if controle==False:
+            valor = self.ui.horizontalSlider.value()
+            self.lamp_control(valor)
+            self.ui.horizontalSlider.setEnabled(True)
+
         teste_conexao = 0
 
-        self.ui.horizontalSlider.setEnabled(True)
+
         self.ui.btn_on_ilum.setEnabled(False)
         self.ui.btn_off_ilum.setEnabled(True)
+        self.ui.txt_state_lamp.setText("Ligada")
 
         data_atual = datetime.now()
         data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
@@ -1197,15 +1203,15 @@ class MyWin(QtWidgets.QMainWindow):
             cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)", (acao, valor, data_db))
             conexao.close()
 
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Information)
-
-            msg.setText(".::Dado Salvo com Sucesso::.")
-            msg.setInformativeText("Sua Iluminação foi Ligada!")
-            msg.setWindowTitle("Sucesso!")
-
-            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            msg.exec_()
+            # msg = QMessageBox()
+            # msg.setIcon(QMessageBox.Information)
+            #
+            # msg.setText(".::Dado Salvo com Sucesso::.")
+            # msg.setInformativeText("Sua Iluminação foi Ligada!")
+            # msg.setWindowTitle("Sucesso!")
+            #
+            # msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            # msg.exec_()
         # Caso a Conexão dê errado:
         except pymysql.err.OperationalError as e:
             if teste_conexao == 0:
@@ -1227,10 +1233,10 @@ class MyWin(QtWidgets.QMainWindow):
         valor = self.ui.horizontalSlider.value()
         self.lamp_control(0)
         teste_conexao = 0
-
         self.ui.horizontalSlider.setEnabled(False)
         self.ui.btn_off_ilum.setEnabled(False)
         self.ui.btn_on_ilum.setEnabled(True)
+        self.ui.txt_state_lamp.setText("Desligada")
 
         data_atual = datetime.now()
         data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
@@ -1253,15 +1259,15 @@ class MyWin(QtWidgets.QMainWindow):
             cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)", (acao, valor, data_db))
             conexao.close()
 
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Information)
-
-            msg.setText(".::Dado Salvo com Sucesso::.")
-            msg.setInformativeText("Sua Iluminação foi Desligada!")
-            msg.setWindowTitle("Sucesso!")
-
-            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            msg.exec_()
+            # msg = QMessageBox()
+            # msg.setIcon(QMessageBox.Information)
+            #
+            # msg.setText(".::Dado Salvo com Sucesso::.")
+            # msg.setInformativeText("Sua Iluminação foi Desligada!")
+            # msg.setWindowTitle("Sucesso!")
+            #
+            # msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            # msg.exec_()
 
         # Caso a Conexão dê errado:
         except pymysql.err.OperationalError as e:
@@ -1333,20 +1339,12 @@ class MyWin(QtWidgets.QMainWindow):
                     msg.exec_()
                     teste_conexao = 1
 
-    def update_temp_banho(self):
-        valor = self.ui.txt_temp_agua.toPlainText()
-        if valor=="":
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Critical)
+    def update_temp_banho_economic(self):
+        valor = self.ui.txt_temp_agua_economic.toPlainText()
+        try:
+            #Variável CHECK NAN......Não retirar!
+            check_nan=int(valor)
 
-            msg.setText(".::Erro de Valor::.")
-            msg.setInformativeText("Falha na Comunicação com o Servidor!")
-            msg.setWindowTitle("Erro na Inicialização")
-            msg.setDetailedText(
-                "A temperatura não pode ser vazia!")
-            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            msg.exec_()
-        else:
             teste_conexao = 0
 
             try:
@@ -1356,14 +1354,14 @@ class MyWin(QtWidgets.QMainWindow):
                 cursor = conexao.cursor()
 
                 # Executa o comando:
-                cursor.execute("UPDATE configuracao_user SET temp_banho=%s WHERE id=1", valor)
+                cursor.execute("UPDATE configuracao_user SET temp_banho_economic=%s WHERE id=1", valor)
                 conexao.close()
 
                 msg = QMessageBox()
                 msg.setIcon(QMessageBox.Information)
 
                 msg.setText(".::Dado Salvo com Sucesso::.")
-                msg.setInformativeText("Sua Temperatura do Banho foi Alterada!")
+                msg.setInformativeText("Sua Temperatura do Banho Econômico foi Alterada!")
                 msg.setWindowTitle("Sucesso!")
 
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
@@ -1385,6 +1383,77 @@ class MyWin(QtWidgets.QMainWindow):
                     msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                     msg.exec_()
                     teste_conexao = 1
+
+        except:
+            self.ui.txt_temp_agua_economic.setText("")
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Critical)
+
+            msg.setText(".::Erro de Valor::.")
+            msg.setInformativeText("Falha na Comunicação com o Servidor!")
+            msg.setWindowTitle("Erro na Inicialização")
+            msg.setDetailedText(
+                "A temperatura deve ser um número inteiro!")
+            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            msg.exec_()
+
+    def update_temp_banho_normal(self):
+        valor = self.ui.txt_temp_agua_normal.toPlainText()
+        try:
+            #Variável CHECK NAN......Não retirar!
+            check_nan=int(valor)
+
+            teste_conexao = 0
+
+            try:
+                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+
+                # Cria um cursor:
+                cursor = conexao.cursor()
+
+                # Executa o comando:
+                cursor.execute("UPDATE configuracao_user SET temp_banho_normal=%s WHERE id=1", valor)
+                conexao.close()
+
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Information)
+
+                msg.setText(".::Dado Salvo com Sucesso::.")
+                msg.setInformativeText("Sua Temperatura do Banho Normal foi Alterada!")
+                msg.setWindowTitle("Sucesso!")
+
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+
+            # Caso a Conexão dê errado:
+            except pymysql.err.OperationalError as e:
+                if teste_conexao == 0:
+                    print("Error while connecting to MySQL", e)
+
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Critical)
+
+                    msg.setText(".::Erro de Conexão com o Banco de Dados::.")
+                    msg.setInformativeText("Falha na Comunicação com o Servidor!")
+                    msg.setWindowTitle("Erro na Inicialização")
+                    msg.setDetailedText(
+                        "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                    msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                    msg.exec_()
+                    teste_conexao = 1
+
+        except:
+            self.ui.txt_temp_agua_normal.setText("")
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Critical)
+
+            msg.setText(".::Erro de Valor::.")
+            msg.setInformativeText("Falha na Comunicação com o Servidor!")
+            msg.setWindowTitle("Erro na Inicialização")
+            msg.setDetailedText(
+                "A temperatura deve ser um número inteiro!")
+            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            msg.exec_()
 
     def update_temp_ar_mais(self):
 
@@ -2089,7 +2158,7 @@ class MyWin(QtWidgets.QMainWindow):
             cursor = conexao.cursor()
             # Executa o comando:
             cursor.execute(
-                "SELECT intensidade_iluminacao, temperatura, aprendizagem, economia, controle,ar_condicionado, televisao, temp_banho,temp_ar,modo_ar,volume_tv,canais_tv, tendencia,estado_iluminacao,lux FROM configuracao_user  WHERE id=1")
+                "SELECT intensidade_iluminacao, temperatura, aprendizagem, economia, controle,ar_condicionado, televisao, temp_banho_economic,temp_ar,modo_ar,volume_tv,canais_tv, tendencia,estado_iluminacao,lux,temp_banho_normal FROM configuracao_user  WHERE id=1")
 
             # Recupera o resultado:
             resultado = cursor.fetchall()
@@ -2102,7 +2171,7 @@ class MyWin(QtWidgets.QMainWindow):
                     valor_controle = linha[4]
                     valor_ar = linha[5]
                     valor_televisao = linha[6]
-                    valor_temp_banho = linha[7]
+                    valor_temp_banho_economic = linha[7]
                     valor_temp_ar = linha[8]
                     valor_modo_ar = linha[9]
                     valor_volume_tv = linha[10]
@@ -2110,25 +2179,29 @@ class MyWin(QtWidgets.QMainWindow):
                     tendencia=linha[12]
                     estado_iluminacao=linha[13]
                     lux=linha[14]
+                    valor_temp_banho_normal=linha[15]
 
                 self.ui.horizontalSlider.setValue(valor_ilum)
                 self.ui.label_10.setText(str(valor_ilum))
                 if estado_iluminacao==True:
                     self.ui.horizontalSlider.setEnabled(True)
                     self.ui.btn_on_ilum.setEnabled(False)
+                    self.ui.txt_state_lamp.setText("Ligada")
                 else:
                     self.ui.horizontalSlider.setEnabled(False)
                     self.ui.btn_off_ilum.setEnabled(False)
+                    self.ui.txt_state_lamp.setText("Desligada")
 
                 self.ui.txt_temp.setText(str(valor_temp))
                 self.ui.check_Aprendizagem.setCheckState(valor_aprendizagem)
                 self.ui.check_Economia.setCheckState(valor_economia)
                 self.ui.check_Controle.setCheckState(valor_controle)
-                self.ui.txt_temp_agua.setText(str(valor_temp_banho))
+                self.ui.txt_temp_agua_economic.setText(str(valor_temp_banho_economic))
                 self.ui.text_temp_ar.setText(str(valor_temp_ar))
                 self.ui.text_vol.setText(str(valor_volume_tv))
                 self.ui.text_canal.setText(str(valor_canais_tv))
                 self.ui.txt_tendencia.setText(str(tendencia))
+                self.ui.txt_temp_agua_normal.setText(str(valor_temp_banho_normal))
 
                 if valor_ar == True:
                     self.ui.btn_power_ar.setText("Desligar")
@@ -3622,7 +3695,7 @@ class MyWin(QtWidgets.QMainWindow):
         dados="p,{}".format(input)
         serial_port.write(dados.encode('utf-8'))
         serial_port.flush()
-        data = serial_port.readline().decode('utf-8')
+        data = serial_port.readline().decode('utf-8').replace('\r\n', '')
         print(data)
 
         #serial_port.close()
@@ -3730,12 +3803,17 @@ class MyWin(QtWidgets.QMainWindow):
 
     #Apresentação de Parâmetros na interface
     def apresenta_parametros(self):
+        global presenca
         umidade,temperatura=self.temp_umid()
         lux=self.luximetro()
         self.ui.txt_temp_amb.setText(temperatura + "ºC")
         self.ui.txt_umid.setText(umidade + "%")
         self.ui.txt_lux.setText(lux)
 
+        if presenca==True:
+            self.ui.txt_presenca.setText("Há alguém no cômodo!")
+        else:
+            self.ui.txt_presenca.setText("Não há presença no cômodo!")
         # tt = threading.Timer(1, self.apresenta_parametros)
         # tt.start()
 
@@ -4208,21 +4286,32 @@ class MyWin(QtWidgets.QMainWindow):
             temp = self.temp_agua()
             pid_banho.update(float(temp))
             targetPwm = pid_banho.output
-        #Desabilita configuração inicial
-        verify_pid_lamp=True
+
         #Seta o valor PWM
         targetPwm = max(min(int(targetPwm), 100), 0)
-        # lamp_control(targetPwm)
+
         if modo == "Iluminação":
+            self.lamp_control(targetPwm)
+            state_lamp=self.ui.txt_state_lamp.text()
             print("SET: %.1f LUX | ATUAL: %.1f LUX | PWM: %s %%" % (float(target), float(lux), float(targetPwm)))
+            if verify_pid_lamp==True and state_lamp=="Desligada":
+                self.update_estado_iluminacao_on()
         else:
             print("SET: %.1f LUX | ATUAL: %.1f LUX | PWM: %s %%" % (float(target), float(temp), float(targetPwm)))
+
+        # Desabilita configuração inicial
+        verify_pid_lamp = True
 
     def verify_pid_lamp(self):
         global target_lamp
         global verify_pid_lamp
         global presenca
-        print("Há presença no ambiente? ", presenca)
+
+        if presenca==True:
+            self.ui.txt_presenca.setText("Há alguém no cômodo!")
+        else:
+            self.ui.txt_presenca.setText("Não há presença no cômodo!")
+
 
         # Checa a presença ou não de presença
         self.check_pir1()
@@ -4230,11 +4319,14 @@ class MyWin(QtWidgets.QMainWindow):
         # GET controle e economia
         controle = self.check_controle()
         economia = self.check_economia()
+        state_lamp=self.ui.txt_state_lamp.text()
         # Se controle estiver habilitado
         if controle == True:
             # Se houver Presença, Box Economia estiver setado Executa a automação
             if presenca == True and economia == True and verify_pid_lamp == True:
                 self.auto_iluminacao()
+            if state_lamp=="Ligada" and presenca==False and economia == True and verify_pid_lamp == True:
+                self.update_estado_iluminacao_off()
             if presenca == True and economia == False and verify_pid_lamp == True:
                 # Economia desabilitada, logo, pode setar PWM no máximo
                 return
