@@ -35,7 +35,7 @@ pid_lamp=0
 verify_pir1=False
 verify_pir2=False
 presenca=False
-verify_auto_lamp=False
+verify_lamp_economic=False
 time_last=datetime.now()
 time_last2=datetime.now()
 
@@ -1246,6 +1246,8 @@ class MyWin(QtWidgets.QMainWindow):
                 teste_conexao = 1
 
     def update_estado_iluminacao_off(self):
+        global verify_lamp_economic
+        verify_lamp_economic = False
         valor = self.ui.horizontalSlider.value()
         self.lamp_control(0)
         teste_conexao = 0
@@ -2048,10 +2050,12 @@ class MyWin(QtWidgets.QMainWindow):
             self.machine_learning()
 
     def update_Economia(self):
+        global verify_lamp_economic
         valor = self.ui.check_Economia.checkState()
         teste_conexao = 0
         if valor == 1 or valor == 2:
             valor = True
+            verify_lamp_economic=False
         elif valor == 0:
             valor = False
         try:
@@ -4231,6 +4235,7 @@ class MyWin(QtWidgets.QMainWindow):
     def auto_iluminacao(self):
         global verify_pid_lamp
         global target_lamp
+        global verify_lamp_economic
         #Verifica Check Controle e Economia
         controle=self.check_controle()
         economia=self.check_economia()
@@ -4257,6 +4262,12 @@ class MyWin(QtWidgets.QMainWindow):
 
             except pymysql.err.OperationalError as e:
                 print("Error while connecting to MySQL", e)
+        elif controle == True and economia == False and verify_lamp_economic==False:
+            verify_pid_lamp = True
+            # Envia o comando
+            self.lamp_control(100)
+            self.update_estado_iluminacao_on()
+            verify_lamp_economic=True
 
     #Configuração PID
     def configuracao_pid(self,modo,target):
@@ -4337,23 +4348,18 @@ class MyWin(QtWidgets.QMainWindow):
         self.check_pir2()
         # GET controle e economia
         controle = self.check_controle()
-        economia = self.check_economia()
         # Se controle estiver habilitado
         if controle == True:
             # Se houver Presença, Box Economia estiver setado Executa a automação
-            if presenca == True and economia == True and verify_pid_lamp == True:
+            if presenca == True and verify_pid_lamp == True:
                 self.auto_iluminacao()
-            if presenca==False and economia == True and verify_pid_lamp == True:
+            if presenca==False and verify_pid_lamp == True:
                 #Esse IF garante que a lâmpada só vai executar o desligamento, se estiver ligada anteriormente
                 if self.ui.txt_state_lamp.text()=="Ligada":
                     self.update_estado_iluminacao_off()
 
-            if presenca == True and economia == False and verify_pid_lamp == True:
-                # Economia desabilitada, logo, pode setar PWM no máximo
-                return
-
         # Configuração inicial
-        if verify_pid_lamp == False and controle == True and economia == True:
+        if verify_pid_lamp == False and controle == True:
             self.configuracao_pid("Iluminação", target_lamp)
 
     #Threads
