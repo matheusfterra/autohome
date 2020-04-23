@@ -3944,8 +3944,6 @@ class MyWin(QtWidgets.QMainWindow):
                 verify_pir1=False
                 loop1=False
 
-        print(presenca)
-
     def check_pir2(self):
         #Função para Presença OUT
         #VERIFICAR CODIGO CORRIGIDO ACIMA
@@ -3973,7 +3971,6 @@ class MyWin(QtWidgets.QMainWindow):
 
                 verify_pir2=False
                 loop1=True
-        print(presenca)
 
     def auto_tendencias(self):
         #Pegando a hora atual
@@ -4140,9 +4137,10 @@ class MyWin(QtWidgets.QMainWindow):
     def auto_iluminacao(self):
         global verify_pid_lamp
         global target_lamp
-
+        #Verifica Check Controle e Economia
         controle=self.check_controle()
         economia=self.check_economia()
+        #Se os dois estiverem setados
         if controle==True and economia==True:
             try:
                 conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
@@ -4156,8 +4154,11 @@ class MyWin(QtWidgets.QMainWindow):
                 if cursor.rowcount > 0:
                     for linha in resultado:
                         lux = linha[0]
+                    #Seto a intensidade luminosa
                     target_lamp = lux
+                    #Seta Verify PID para cancelar a configuração inicial
                     verify_pid_lamp = True
+                    #Envia o comando
                     self.configuracao_pid("Iluminação", lux)
 
             except pymysql.err.OperationalError as e:
@@ -4168,16 +4169,22 @@ class MyWin(QtWidgets.QMainWindow):
         global config_pid_banho
         global config_pid_lamp
         global pid_lamp
-
+        global verify_pid_lamp
+        #Setando variaveis PID
         kp=1.4
         ki=0.4
         kd=0.0
+        #Se modo Iluminação
         if modo=="Iluminação":
+            #Se não tiver configurado
             if config_pid_lamp == False:
+                #Seta parametros
                 pid_lamp = PID.PID(kp, ki, kd)
                 pid_lamp.SetPoint = target
                 pid_lamp.setSampleTime(1)
                 config_pid_lamp = True
+                print("PID Configurado")
+            #Se já houver sido configurado, seta parâmetros e executa o Update
             pid_lamp.SetPoint = target
             pid_lamp.setKp(kp)
             pid_lamp.setKi(ki)
@@ -4185,14 +4192,15 @@ class MyWin(QtWidgets.QMainWindow):
             lux= self.luximetro()
             pid_lamp.update(float(lux))
             targetPwm = pid_lamp.output
-
+        #Se for Controle da agua do Chuveiro
         else:
             if config_pid_banho == False:
                 pid_banho = PID.PID(kp, ki, kd)
                 pid_banho.SetPoint = target
                 pid_banho.setSampleTime(1)
                 config_pid_banho = True
-
+                print("PID Configurado")
+            #Se já houver sido configurado
             pid_banho.SetPoint = target
             pid_banho.setKp(kp)
             pid_banho.setKi(ki)
@@ -4200,7 +4208,9 @@ class MyWin(QtWidgets.QMainWindow):
             temp = self.temp_agua()
             pid_banho.update(float(temp))
             targetPwm = pid_banho.output
-
+        #Desabilita configuração inicial
+        verify_pid_lamp=True
+        #Seta o valor PWM
         targetPwm = max(min(int(targetPwm), 100), 0)
         # lamp_control(targetPwm)
         if modo == "Iluminação":
@@ -4209,34 +4219,35 @@ class MyWin(QtWidgets.QMainWindow):
             print("SET: %.1f LUX | ATUAL: %.1f LUX | PWM: %s %%" % (float(target), float(temp), float(targetPwm)))
 
 
-
     #Threads
     def action_1_second(self):
         self.minha_data()
 
-        #self.registro_potencia()
 
         clock_1_sec = threading.Timer(1, self.action_1_second)
         clock_1_sec.start()
     def action_5_seconds(self):
         global target_lamp
         global verify_pid_lamp
+        global presenca
+        print("Há presença no ambiente? ",presenca)
         self.apresenta_parametros()
-
+        #Checa a presença ou não de presença
         self.check_pir1()
         self.check_pir2()
-
+        #GET controle e economia
         controle=self.check_controle()
         economia=self.check_economia()
-
+        #Se controle estiver habilitado
         if controle==True:
-            presenca=self.check_pir1()
-            if presenca=="1" and economia==True and verify_pid_lamp==False:
+            #Se houver Presença, Box Economia estiver setado Executa a automação
+            if presenca==True and economia==True and verify_pid_lamp==True:
                 self.auto_iluminacao()
-            if presenca == "1" and economia == False and verify_pid_lamp == False:
-                #Posso enviar parametro pra auto_iluminacao para ver se deve ser economia ou nao
+            if presenca == True and economia == False and verify_pid_lamp == True:
+                #Economia desabilitada, logo, pode setar PWM no máximo
                 return
-        if verify_pid_lamp==True and controle==True and economia==True:
+        #Configuração inicial
+        if verify_pid_lamp==False and controle==True and economia==True:
             self.configuracao_pid("Iluminação",target_lamp)
 
         clock_5_sec = threading.Timer(5, self.action_5_seconds)
