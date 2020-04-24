@@ -1,56 +1,47 @@
 import threading
-from concurrent.futures import thread
 from idlelib import window
-
 from PyQt5.QtGui import QPixmap
-
 from info import Ui_InfoWindow
-import numpy
-import self as self
 from PyQt5.QtWidgets import QMainWindow, QLabel, QApplication, QWidget, QPushButton, QMessageBox
 from datetime import datetime, timedelta, date
 import time
-import datetime as dt
-import threading as th
 from PyQt5.QtWidgets import *
 from interface import *
 from backup_db import *
 import pymysql
 import matplotlib.pyplot as plt
 import numpy as np
-from operator import itemgetter
 import sys
-from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT as NavigationToolbar)
-import random
 import serial
 import PID
 
 teste_conexao = 0
 botao_info = False
-auto_update_graph=False
-tendencias=0
-config_pid_lamp=False
-config_pid_banho=False
-verify_pid_lamp=False
-target_lamp=0
-target_banho_normal=0
-target_banho_economic=0
-pid_lamp=0
-pid_banho_normal=0
-pid_banho_economic=0
-verify_pir1=False
-verify_pir2=False
-presenca=False
-verify_lamp_economic=False
-time_last=datetime.now()
-time_last2=datetime.now()
-state_banho=False
+auto_update_graph = False
+tendencias = 0
+config_pid_lamp = False
+config_pid_banho = False
+verify_pid_lamp = False
+target_lamp = 0
+target_banho_normal = 0
+target_banho_economic = 0
+pid_lamp = 0
+pid_banho_normal = 0
+pid_banho_economic = 0
+verify_pir1 = False
+verify_pir2 = False
+presenca = False
+verify_lamp_economic = False
+time_last = datetime.now()
+time_last2 = datetime.now()
+state_banho = False
 
-#Variável usada para conferência da mudança de hora para realização do backup
-hora_inicial=datetime.now()
-hora_inicial = hora_inicial.replace(minute=00,second=00,microsecond=00)
-#Conexao com a porta SERIAL
-serial_port = serial.Serial('COM8', baudrate = 9600, writeTimeout = 0)
+# Variável usada para conferência da mudança de hora para realização do backup
+hora_inicial = datetime.now()
+hora_inicial = hora_inicial.replace(minute=00, second=00, microsecond=00)
+# Conexao com a porta SERIAL
+serial_port = serial.Serial('COM8', baudrate=9600, writeTimeout=0)
+
 
 class MyWin(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
@@ -93,13 +84,13 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.comboBox_Mes.currentIndexChanged.connect(self.update_graph)
         self.ui.comboBox_Ano.currentIndexChanged.connect(self.update_graph)
 
-        #Configurações
+        # Configurações
         self.set_configs_user()
 
         # Funcoes de Botoes e Slider de Iluminacao e Temperatura//Aba QUARTO
         self.ui.horizontalSlider.valueChanged.connect(self.change_slider_ilum)
         self.ui.horizontalSlider.sliderReleased.connect(self.update_intensidade_iluminacao)
-        #self.ui.horizontalSlider.bind("<ButtonRelease-1>", self.update_intensidade_iluminacao)
+        # self.ui.horizontalSlider.bind("<ButtonRelease-1>", self.update_intensidade_iluminacao)
         self.ui.btn_on_ilum.clicked.connect(self.btn_on_lamp)
         self.ui.btn_off_ilum.clicked.connect(self.btn_off_lamp)
         self.ui.btn_temp.clicked.connect(self.update_temp)
@@ -127,9 +118,7 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.check_Controle.stateChanged.connect(self.update_Controle)
         self.ui.btn_tendencia.clicked.connect(self.update_Tendencia)
 
-
-
-        #Chama agente gerente
+        # Chama agente gerente
         self.agente_gerente()
 
     # FUNÇÕES DO SISTEMA
@@ -143,7 +132,6 @@ class MyWin(QtWidgets.QMainWindow):
 
         # t = threading.Timer(1, self.minha_data)
         # t.start()
-
 
         # if data_em_texto=='30/01/2020':
         #   self.ui.label_3.setText("Hoje é dia:"+data_em_texto)
@@ -162,7 +150,7 @@ class MyWin(QtWidgets.QMainWindow):
         return aba
 
     def teste_btn(self):
-        #valor=self.medicao_potencia()
+        # valor=self.medicao_potencia()
         self.ui.label_3.setText("Botão Pressionado")
 
     def sair(self):
@@ -236,7 +224,7 @@ class MyWin(QtWidgets.QMainWindow):
                             n = n + 1
                             potencia_dia[0][n] = res[x + 1][4]
                     for x in range(0, p):
-                        eixo_y_hora[0][x] = round((potencia_dia[0][x])/3600000,4) # Conversão para  kWh
+                        eixo_y_hora[0][x] = round((potencia_dia[0][x]) / 3600000, 4)  # Conversão para  kWh
                         eixo_x_hora[0][x] = horas_do_dia[0][x]
 
                     i = 1 + i
@@ -271,7 +259,7 @@ class MyWin(QtWidgets.QMainWindow):
                     res[i][1] = data
                     # Identifica a quantidade de Dias Diferentes no Mês
                     p = 1
-                    for x in range(0, i ):
+                    for x in range(0, i):
                         if res[x][1] != res[x + 1][1]:
                             p = p + 1
                     # Cria Eixos do tamanho adequado
@@ -305,7 +293,7 @@ class MyWin(QtWidgets.QMainWindow):
                     #     potencia_dia[0][n] = potencia_dia[0][n] + res[i][4]
 
                     for x in range(0, p):
-                        eixo_y_dia[0][x] = round((potencia_dia[0][x])/3600000,4)
+                        eixo_y_dia[0][x] = round((potencia_dia[0][x]) / 3600000, 4)
                         eixo_x_dia[0][x] = dias_do_mes[0][x]
                     i = 1 + i
 
@@ -367,7 +355,7 @@ class MyWin(QtWidgets.QMainWindow):
                     i = 1 + i
 
                     for x in range(0, p):
-                        eixo_y_mes[0][x] = round((potencia_mes[0][x])/3600000,4)
+                        eixo_y_mes[0][x] = round((potencia_mes[0][x]) / 3600000, 4)
                         eixo_x_mes[0][x] = mes_do_ano[0][x]
                 # Conta a quantidade de valores do Vetor
                 posicao3 = len(eixo_x_mes[0])
@@ -567,7 +555,6 @@ class MyWin(QtWidgets.QMainWindow):
     def consumo_mensal(self):
         global teste_conexao
 
-
         data_atual = datetime.now()
         mes = int(data_atual.strftime('%m'))
         i = 0
@@ -585,7 +572,7 @@ class MyWin(QtWidgets.QMainWindow):
             resultado = cursor.fetchall()
             if cursor.rowcount > 0:
                 print("Numero de Registros: ", cursor.rowcount)
-                res = np.array([[0] * 5] * cursor.rowcount,dtype=np.float64)
+                res = np.array([[0] * 5] * cursor.rowcount, dtype=np.float64)
                 # print(res, "\n")
                 # print("\nDados:")
                 for linha in resultado:
@@ -609,10 +596,10 @@ class MyWin(QtWidgets.QMainWindow):
                 consumo_total = 0
                 for x in range(0, i):
                     consumo_total = consumo_total + res[x][4]
-                consumo_total=(consumo_total)/3600000 #Dividindo por 3600000 para conversão para kWh
+                consumo_total = (consumo_total) / 3600000  # Dividindo por 3600000 para conversão para kWh
                 # Atualização dos Valores da Interface
                 self.ui.consumo_instantaneo.setText(str(res[0][4]))
-                self.ui.consumo_mensal.setText(str(round(consumo_total,4)))
+                self.ui.consumo_mensal.setText(str(round(consumo_total, 4)))
             else:
                 print("Dados Insuficientes no Banco de Dados")
             # Finaliza a conexão
@@ -848,19 +835,19 @@ class MyWin(QtWidgets.QMainWindow):
                 # Cria um Interrupt caso seja selecionado Diário, para recarregar a cada hora.
                 if selecao == 'Diário':
                     for x in range(0, p):
-                        eixo_y[0][x] = potencia_dia[0][x]/3600000
+                        eixo_y[0][x] = potencia_dia[0][x] / 3600000
                         eixo_x[0][x] = horas_do_dia[0][x]
                     # u = threading.Timer(3600, self.update_graph)
                     # u.start()
                 # Atribui as variáveis nos eixos para Apresentar
                 if selecao == 'Mensal':
                     for x in range(0, p):
-                        eixo_y[0][x] = potencia_dia[0][x]/3600000
+                        eixo_y[0][x] = potencia_dia[0][x] / 3600000
                         eixo_x[0][x] = dias_do_mes[0][x]
                 # Atribui as variáveis nos eixos para Apresentar
                 if selecao == 'Anual':
                     for x in range(0, p):
-                        eixo_y[0][x] = potencia_mes[0][x]/3600000
+                        eixo_y[0][x] = potencia_mes[0][x] / 3600000
                         eixo_x[0][x] = mes_do_ano[0][x]
 
                 # Cria os Graficos
@@ -902,8 +889,8 @@ class MyWin(QtWidgets.QMainWindow):
                 # Habilita Botao Info
                 self.ui.btn_info.setEnabled(True)
                 botao_info = True
-                #Variavel para correção do BUG janela de data errada
-                auto_update_graph=False
+                # Variavel para correção do BUG janela de data errada
+                auto_update_graph = False
                 return eixo_x, eixo_y, selecao
             # Apresenta as mensagens de erro caso as datas não forem encontradas
             else:
@@ -917,13 +904,12 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setInformativeText("A Data Selecionada não possui Registros.")
                 msg.setWindowTitle("Data Indisponível")
                 msg.setDetailedText(
-                        "Por favor, altere a Data Selecionada\nConfira se o Dia selecionado corresponde corretamente ao mês escolhido.")
+                    "Por favor, altere a Data Selecionada\nConfira se o Dia selecionado corresponde corretamente ao mês escolhido.")
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
                 # Desabilita Botao para evitar erro.
                 self.ui.btn_info.setEnabled(False)
                 botao_info = True
-
 
             # Finaliza a conexão
             conexao.close()
@@ -980,15 +966,15 @@ class MyWin(QtWidgets.QMainWindow):
         print("Verificando mudança de Horário")
         global hora_inicial
         global teste_conexao
-        #Capta a hora atual e zera os minutos e segundos
-        time_now=datetime.now().replace(minute=00,second=00,microsecond=00)
-        #Capta horário que o programa se iniciou
+        # Capta a hora atual e zera os minutos e segundos
+        time_now = datetime.now().replace(minute=00, second=00, microsecond=00)
+        # Capta horário que o programa se iniciou
         ano = hora_inicial.year
-        mes=hora_inicial.month
-        dia=hora_inicial.day
-        hora=hora_inicial.hour
-        microsec=hora_inicial.microsecond
-        #Se a hora for diferente da hora inicial, faz a condensação das medições da hora que passou
+        mes = hora_inicial.month
+        dia = hora_inicial.day
+        hora = hora_inicial.hour
+        microsec = hora_inicial.microsecond
+        # Se a hora for diferente da hora inicial, faz a condensação das medições da hora que passou
         if time_now != hora_inicial:
 
             print("Realizando Condensação dos registros de medições")
@@ -998,49 +984,55 @@ class MyWin(QtWidgets.QMainWindow):
                 # Cria um cursor:
                 cursor = conexao.cursor()
                 # Executa o comando:
-                cursor.execute("SELECT * FROM medicao  WHERE YEAR(horario) = %s AND MONTH(horario) = %s AND DAY(horario) = %s AND HOUR(horario) = %s ORDER BY horario DESC ", (ano,mes,dia,hora))
+                cursor.execute(
+                    "SELECT * FROM medicao  WHERE YEAR(horario) = %s AND MONTH(horario) = %s AND DAY(horario) = %s AND HOUR(horario) = %s ORDER BY horario DESC ",
+                    (ano, mes, dia, hora))
                 # Recupera o resultado:
                 resultado = cursor.fetchall()
                 if cursor.rowcount > 0:
                     print("Quantidade de medições: ", cursor.rowcount)
-                    res = np.array([[0] * 5] * cursor.rowcount,dtype=np.float)
-                    i=0
+                    res = np.array([[0] * 5] * cursor.rowcount, dtype=np.float)
+                    i = 0
                     for linha in resultado:
                         data = linha[1]
 
                         res[i][0] = linha[0]
-                        #res[i][1] = valor
+                        # res[i][1] = valor
                         res[i][2] = linha[2]
                         res[i][3] = linha[3]
                         res[i][4] = linha[4]
 
-                        i+=1
+                        i += 1
 
-                    #print(res)
-                    corrente=0
-                    tensao=0
-                    potencia=0
-                    #Somatorio de todas as medições
+                    # print(res)
+                    corrente = 0
+                    tensao = 0
+                    potencia = 0
+                    # Somatorio de todas as medições
                     for x in range(0, cursor.rowcount):
-                        corrente=res[x][2]+corrente
+                        corrente = res[x][2] + corrente
                         tensao = res[x][3] + tensao
-                        potencia=res[x][4] + potencia
-                    #Modificação dos horários de registros, para retirar os minutos e segundos
-                    newdate = data.replace(minute=00,second=00)
-                    #Media das correntes e tensões
-                    corrente=round(corrente/cursor.rowcount,3)
-                    tensao = round(tensao / cursor.rowcount,3)
-                    print("\nCorrente media:{}A, Tensão Media:{}V, Potencia Média:{}kWh\n".format(corrente,tensao,potencia))
+                        potencia = res[x][4] + potencia
+                    # Modificação dos horários de registros, para retirar os minutos e segundos
+                    newdate = data.replace(minute=00, second=00)
+                    # Media das correntes e tensões
+                    corrente = round(corrente / cursor.rowcount, 3)
+                    tensao = round(tensao / cursor.rowcount, 3)
+                    print("\nCorrente media:{}A, Tensão Media:{}V, Potencia Média:{}kWh\n".format(corrente, tensao,
+                                                                                                  potencia))
 
-                    cursor.execute("DELETE FROM medicao WHERE YEAR(horario) = %s AND MONTH(horario) = %s AND DAY(horario) = %s AND HOUR(horario) = %s ORDER BY horario DESC ", (ano,mes,dia,hora))
+                    cursor.execute(
+                        "DELETE FROM medicao WHERE YEAR(horario) = %s AND MONTH(horario) = %s AND DAY(horario) = %s AND HOUR(horario) = %s ORDER BY horario DESC ",
+                        (ano, mes, dia, hora))
                     print("Medições não condensadas, DELETADAS")
 
-                    cursor.execute("INSERT INTO medicao (horario,corrente,tensao,potencia) VALUES(%s,%s,%s,%s)",(newdate,float(corrente),float(tensao),float(potencia)))
+                    cursor.execute("INSERT INTO medicao (horario,corrente,tensao,potencia) VALUES(%s,%s,%s,%s)",
+                                   (newdate, float(corrente), float(tensao), float(potencia)))
                     print("Potência Condensada, registrada\n")
 
                     conexao.close()
-                    #Atribui uma nova hora para comparação
-                    hora_inicial = datetime.now().replace(minute=00,second=00,microsecond=00)
+                    # Atribui uma nova hora para comparação
+                    hora_inicial = datetime.now().replace(minute=00, second=00, microsecond=00)
                 else:
                     print("Dados Insuficientes no Banco de Dados")
                     # Finaliza a conexão
@@ -1063,9 +1055,9 @@ class MyWin(QtWidgets.QMainWindow):
                     teste_conexao = 1
 
     def agrupamento_medicoes_diario(self):
-        ano_atual=datetime.now().year
-        mes_atual=datetime.now().month
-        dia_atual=datetime.now().day
+        ano_atual = datetime.now().year
+        mes_atual = datetime.now().month
+        dia_atual = datetime.now().day
         try:
             conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
             # Cria um cursor:
@@ -1079,17 +1071,17 @@ class MyWin(QtWidgets.QMainWindow):
             if cursor.rowcount > 0:
                 for linha in resultado:
                     date_agrupamentos = linha[0]
-                    status_agrupamento=linha[1]
-            #Se o mês atual for diferente do ultimo mes da condensação, significa que se passou 1 mês e é hora de executar novamente,
-            if dia_atual!=date_agrupamentos.day:
+                    status_agrupamento = linha[1]
+            # Se o mês atual for diferente do ultimo mes da condensação, significa que se passou 1 mês e é hora de executar novamente,
+            if dia_atual != date_agrupamentos.day:
                 cursor.execute(
                     "SELECT * FROM medicao  WHERE YEAR(horario) = %s AND MONTH(horario) = %s AND DAY(horario) = %s ORDER BY horario DESC ",
                     (date_agrupamentos.year, date_agrupamentos.month, date_agrupamentos.day))
                 # Recupera o resultado:
                 resultado = cursor.fetchall()
                 if cursor.rowcount > 0:
-                    #print("Quantidade de medições: ", cursor.rowcount)
-                    res = np.array([[0] * 5] * cursor.rowcount,dtype='<U22')
+                    # print("Quantidade de medições: ", cursor.rowcount)
+                    res = np.array([[0] * 5] * cursor.rowcount, dtype='<U22')
 
                     i = 0
                     for linha in resultado:
@@ -1102,48 +1094,49 @@ class MyWin(QtWidgets.QMainWindow):
                         res[i][4] = linha[4]
 
                         i += 1
-                    #Criação do vetor agrupamento para
-                    agrupamentos = np.array([[0] * 5] , dtype='<U22')
-                    #Atribui o primeiro resultado do BD ao vetor
-                    agrupamentos[0]=res[0]
-                    #Atribui o ID 0
-                    agrupamentos[0][0]=0
+                    # Criação do vetor agrupamento para
+                    agrupamentos = np.array([[0] * 5], dtype='<U22')
+                    # Atribui o primeiro resultado do BD ao vetor
+                    agrupamentos[0] = res[0]
+                    # Atribui o ID 0
+                    agrupamentos[0][0] = 0
 
-                    n=0
+                    n = 0
                     for x in range(0, cursor.rowcount):
-                        #Trava para impedir o erro de Index
-                        if x+1<cursor.rowcount:
-                            #Criação de objetos datas
+                        # Trava para impedir o erro de Index
+                        if x + 1 < cursor.rowcount:
+                            # Criação de objetos datas
                             data_obj_1 = datetime.strptime(res[x][1], '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
-                            data_obj_2 = datetime.strptime(res[x+1][1], '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
-                            #Comparações. Caso a hora das duas datas sejam as mesmas, elas se agrupam
-                            if data_obj_1.hour==data_obj_2.hour:
-                                agrupamentos[n][4]=float(agrupamentos[n][4])+float(res[x+1][4])
-                            #Se nao, ha o aumento do vetor agrupamentos e a atribuiçao da nova medida
+                            data_obj_2 = datetime.strptime(res[x + 1][1],
+                                                           '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
+                            # Comparações. Caso a hora das duas datas sejam as mesmas, elas se agrupam
+                            if data_obj_1.hour == data_obj_2.hour:
+                                agrupamentos[n][4] = float(agrupamentos[n][4]) + float(res[x + 1][4])
+                            # Se nao, ha o aumento do vetor agrupamentos e a atribuiçao da nova medida
                             else:
                                 agrupamentos = np.resize(agrupamentos, (len(agrupamentos) + 1, 5))
-                                agrupamentos[n+1]=res[x+1]
-                                agrupamentos[n+1][0]=n+1
-                                n+=1
+                                agrupamentos[n + 1] = res[x + 1]
+                                agrupamentos[n + 1][0] = n + 1
+                                n += 1
 
-                    #Delete no BD, as medidas que foram agrupadas
-                    for x in range(0,cursor.rowcount):
-                        id=res[x][0]
-                        cursor.execute("DELETE FROM medicao WHERE  id = %s ",id)
+                    # Delete no BD, as medidas que foram agrupadas
+                    for x in range(0, cursor.rowcount):
+                        id = res[x][0]
+                        cursor.execute("DELETE FROM medicao WHERE  id = %s ", id)
                     print("\nMedições não condensadas, DELETADAS\n")
-                    #Inserção do novo agrupamento novamente no BD
-                    for x in range(0,n+1):
-                        newdate=datetime.strptime(agrupamentos[x][1], '%Y-%m-%d %H:%M:%S')
-                        corrente=agrupamentos[x][2]
-                        tensao=agrupamentos[x][3]
-                        potencia=agrupamentos[x][4]
+                    # Inserção do novo agrupamento novamente no BD
+                    for x in range(0, n + 1):
+                        newdate = datetime.strptime(agrupamentos[x][1], '%Y-%m-%d %H:%M:%S')
+                        corrente = agrupamentos[x][2]
+                        tensao = agrupamentos[x][3]
+                        potencia = agrupamentos[x][4]
                         cursor.execute("INSERT INTO medicao (horario,corrente,tensao,potencia) VALUES(%s,%s,%s,%s)",
                                        (newdate, float(corrente), float(tensao), float(potencia)))
                     print("Potência Condensada, registrada\n")
 
-                    #Atualização da data atual para comparação
+                    # Atualização da data atual para comparação
                     data_atual = datetime.now()
-                    #Atualização da data atual no BD
+                    # Atualização da data atual no BD
                     cursor.execute("UPDATE configuracao_user SET date_agrupamento_medicoes=%s WHERE id=1", data_atual)
 
                     conexao.close()
@@ -1185,29 +1178,28 @@ class MyWin(QtWidgets.QMainWindow):
                 teste_conexao = 1
 
     def btn_on_lamp(self):
-        #Atualiza estado do Check Controle
+        # Atualiza estado do Check Controle
         self.ui.check_Controle.setCheckState(False)
         self.update_Controle()
-        #Atualiza estado da Lâmpada
+        # Atualiza estado da Lâmpada
         self.update_estado_iluminacao_on()
 
     def btn_off_lamp(self):
-        #Desabilita o Check Control
+        # Desabilita o Check Control
         self.ui.check_Controle.setCheckState(False)
         self.update_Controle()
-        #Atualiza estado da Lâmpada
+        # Atualiza estado da Lâmpada
         self.update_estado_iluminacao_off()
 
     def update_estado_iluminacao_on(self):
 
-        controle=self.check_controle()
-        if controle==False:
+        controle = self.check_controle()
+        if controle == False:
             valor = self.ui.horizontalSlider.value()
             self.lamp_control(valor)
             self.ui.horizontalSlider.setEnabled(True)
 
         teste_conexao = 0
-
 
         self.ui.btn_on_ilum.setEnabled(False)
         self.ui.btn_off_ilum.setEnabled(True)
@@ -1316,7 +1308,7 @@ class MyWin(QtWidgets.QMainWindow):
 
     def update_temp(self):
         valor = self.ui.txt_temp.toPlainText()
-        if valor=="":
+        if valor == "":
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Critical)
 
@@ -1369,8 +1361,8 @@ class MyWin(QtWidgets.QMainWindow):
 
     def update_banho(self):
         global state_banho
-        state_banho= not state_banho
-        if state_banho==True:
+        state_banho = not state_banho
+        if state_banho == True:
             self.ui.btn_ligar_banho.setText("Desligar Chuveiro")
         else:
             self.banho_control(0)
@@ -1380,8 +1372,8 @@ class MyWin(QtWidgets.QMainWindow):
     def update_temp_banho_economic(self):
         valor = self.ui.txt_temp_agua_economic.toPlainText()
         try:
-            #Variável CHECK NAN......Não retirar!
-            check_nan=int(valor)
+            # Variável CHECK NAN......Não retirar!
+            check_nan = int(valor)
 
             teste_conexao = 0
 
@@ -1438,8 +1430,8 @@ class MyWin(QtWidgets.QMainWindow):
     def update_temp_banho_normal(self):
         valor = self.ui.txt_temp_agua_normal.toPlainText()
         try:
-            #Variável CHECK NAN......Não retirar!
-            check_nan=int(valor)
+            # Variável CHECK NAN......Não retirar!
+            check_nan = int(valor)
 
             teste_conexao = 0
 
@@ -1533,7 +1525,7 @@ class MyWin(QtWidgets.QMainWindow):
                 cursor.execute("UPDATE configuracao_user SET temp_ar=%s WHERE id=1", valor)
                 valor = True
 
-                #Verifica Acionamento da aprendizagem
+                # Verifica Acionamento da aprendizagem
                 aprendizagem = self.check_aprendizagem()
                 if aprendizagem == True:
                     cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)",
@@ -1551,7 +1543,8 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setText(".::Erro de Conexão com o Banco de Dados::.")
                 msg.setInformativeText("Falha na Comunicação com o Servidor!")
                 msg.setWindowTitle("Erro na Inicialização")
-                msg.setDetailedText("Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setDetailedText(
+                    "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
                 teste_conexao = 1
@@ -1605,8 +1598,6 @@ class MyWin(QtWidgets.QMainWindow):
                                    (acao, valor, data_db))
                 conexao.close()
 
-
-
             # Caso a Conexão dê errado:
         except pymysql.err.OperationalError as e:
             if teste_conexao == 0:
@@ -1618,7 +1609,8 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setText(".::Erro de Conexão com o Banco de Dados::.")
                 msg.setInformativeText("Falha na Comunicação com o Servidor!")
                 msg.setWindowTitle("Erro na Inicialização")
-                msg.setDetailedText("Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setDetailedText(
+                    "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
                 teste_conexao = 1
@@ -1680,7 +1672,8 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setText(".::Erro de Conexão com o Banco de Dados::.")
                 msg.setInformativeText("Falha na Comunicação com o Servidor!")
                 msg.setWindowTitle("Erro na Inicialização")
-                msg.setDetailedText("Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setDetailedText(
+                    "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
                 teste_conexao = 1
@@ -1742,7 +1735,8 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setText(".::Erro de Conexão com o Banco de Dados::.")
                 msg.setInformativeText("Falha na Comunicação com o Servidor!")
                 msg.setWindowTitle("Erro na Inicialização")
-                msg.setDetailedText("Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setDetailedText(
+                    "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
                 teste_conexao = 1
@@ -1804,7 +1798,8 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setText(".::Erro de Conexão com o Banco de Dados::.")
                 msg.setInformativeText("Falha na Comunicação com o Servidor!")
                 msg.setWindowTitle("Erro na Inicialização")
-                msg.setDetailedText("Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setDetailedText(
+                    "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
                 teste_conexao = 1
@@ -1866,7 +1861,8 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setText(".::Erro de Conexão com o Banco de Dados::.")
                 msg.setInformativeText("Falha na Comunicação com o Servidor!")
                 msg.setWindowTitle("Erro na Inicialização")
-                msg.setDetailedText("Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setDetailedText(
+                    "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
                 teste_conexao = 1
@@ -1924,7 +1920,6 @@ class MyWin(QtWidgets.QMainWindow):
                                    (acao, valor, data_db))
                 conexao.close()
 
-
             # Caso a Conexão dê errado:
         except pymysql.err.OperationalError as e:
             if teste_conexao == 0:
@@ -1936,7 +1931,8 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setText(".::Erro de Conexão com o Banco de Dados::.")
                 msg.setInformativeText("Falha na Comunicação com o Servidor!")
                 msg.setWindowTitle("Erro na Inicialização")
-                msg.setDetailedText("Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
+                msg.setDetailedText(
+                    "Confira sua conexão com a Internet!\nCaso seu Acesso esteja normalizado, Contacte o ADM do Servidor.")
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
                 teste_conexao = 1
@@ -1968,7 +1964,8 @@ class MyWin(QtWidgets.QMainWindow):
             aprendizagem = self.check_aprendizagem()
             if aprendizagem == True:
                 # Executa o comando:
-                cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)", (acao, valor, data_db))
+                cursor.execute("INSERT INTO historico_acoes (acao,valor,horario) VALUES(%s,%s,%s)",
+                               (acao, valor, data_db))
             conexao.close()
 
         # Caso a Conexão dê errado:
@@ -2065,8 +2062,8 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.exec_()
                 teste_conexao = 1
 
-        aprendizagem=self.check_aprendizagem()
-        if aprendizagem==True:
+        aprendizagem = self.check_aprendizagem()
+        if aprendizagem == True:
             self.machine_learning()
 
     def update_Economia(self):
@@ -2075,7 +2072,7 @@ class MyWin(QtWidgets.QMainWindow):
         teste_conexao = 0
         if valor == 1 or valor == 2:
             valor = True
-            verify_lamp_economic=False
+            verify_lamp_economic = False
         elif valor == 0:
             valor = False
         try:
@@ -2218,14 +2215,14 @@ class MyWin(QtWidgets.QMainWindow):
                     valor_modo_ar = linha[9]
                     valor_volume_tv = linha[10]
                     valor_canais_tv = linha[11]
-                    tendencia=linha[12]
-                    estado_iluminacao=linha[13]
-                    lux=linha[14]
-                    valor_temp_banho_normal=linha[15]
+                    tendencia = linha[12]
+                    estado_iluminacao = linha[13]
+                    lux = linha[14]
+                    valor_temp_banho_normal = linha[15]
 
                 self.ui.horizontalSlider.setValue(valor_ilum)
                 self.ui.label_10.setText(str(valor_ilum))
-                if estado_iluminacao==True:
+                if estado_iluminacao == True:
                     self.ui.horizontalSlider.setEnabled(True)
                     self.ui.btn_on_ilum.setEnabled(False)
                     self.ui.txt_state_lamp.setText("Ligada")
@@ -2245,7 +2242,7 @@ class MyWin(QtWidgets.QMainWindow):
                 self.ui.txt_tendencia.setText(str(tendencia))
                 self.ui.txt_temp_agua_normal.setText(str(valor_temp_banho_normal))
 
-                if valor_controle==False:
+                if valor_controle == False:
                     self.ui.btn_ligar_banho.setEnabled(False)
                 if valor_ar == True:
                     self.ui.btn_power_ar.setText("Desligar")
@@ -2272,22 +2269,21 @@ class MyWin(QtWidgets.QMainWindow):
     def machine_learning(self):
         aprendizagem = self.check_aprendizagem()
         if aprendizagem == True:
-
             self.machine_learning_temperatura_ar_mais()
             self.machine_learning_temperatura_ar_menos()
             self.machine_learning_power_ar_off()
             self.machine_learning_power_ar_on()
             self.select_graph_update_mac()
 
-        controle= self.check_controle()
+        controle = self.check_controle()
         if controle == True:
             self.check_tendencias()
 
     def machine_learning_temperatura_ar_mais(self):
-        #Variaveis de Configuração
+        # Variaveis de Configuração
         qq = 0
         sair = 0
-        taxa_tendencia=0.5
+        taxa_tendencia = 0.5
         temperatura_ar_mais = 0
         n_temperatura_ar_mais = 0
         quantidade_grupos_temperatura_ar_mais = 0
@@ -2298,7 +2294,7 @@ class MyWin(QtWidgets.QMainWindow):
             cursor = conexao.cursor()
             # Executa o comando:
             cursor.execute("SELECT acao,valor,horario FROM historico_acoes ORDER BY TIME(horario) ASC")
-            #cursor.execute("SELECT acao,valor,horario FROM historico_acoes ORDER BY horario ASC")
+            # cursor.execute("SELECT acao,valor,horario FROM historico_acoes ORDER BY horario ASC")
 
             # Recupera o resultado:
             resultado = cursor.fetchall()
@@ -2308,15 +2304,15 @@ class MyWin(QtWidgets.QMainWindow):
                     mac_acao[qq][0] = linha[0]
                     mac_acao[qq][1] = linha[1]
                     mac_acao[qq][2] = linha[2]
-                    #Verifica a categoria da Função atual
+                    # Verifica a categoria da Função atual
                     if mac_acao[qq][0] == 'Temperatura-Ar-Mais':
                         temperatura_ar_mais = temperatura_ar_mais + 1
-                    #Contador de resultados
+                    # Contador de resultados
                     qq = qq + 1
-            #criação do vetorcom a quantidade de resultados
+            # criação do vetorcom a quantidade de resultados
             mac_temperatura_ar_mais = np.array([[0] * 3] * temperatura_ar_mais, dtype='<U19')
 
-            #Conta a quantidade de resultados, e atribui ao novo vetor
+            # Conta a quantidade de resultados, e atribui ao novo vetor
             for x in range(0, cursor.rowcount):
                 if mac_acao[x][0] == 'Temperatura-Ar-Mais':
                     mac_temperatura_ar_mais[n_temperatura_ar_mais] = mac_acao[x]
@@ -2329,33 +2325,35 @@ class MyWin(QtWidgets.QMainWindow):
             # Criação dos Eixos E Vetor do dia do grupo
             eixo_x_temperatura_ar_mais = np.zeros((1, 1), dtype='<U19')
             eixo_y_temperatura_ar_mais = np.zeros((1, 1))
-            dia_do_grupo_temperatura_ar_mais=np.zeros((1, 1),dtype='i4') #Torna o vetor, inteiro
+            dia_do_grupo_temperatura_ar_mais = np.zeros((1, 1), dtype='i4')  # Torna o vetor, inteiro
 
             # Criação da data inicial
             data_obj = datetime.strptime(mac_temperatura_ar_mais[0][2], '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
             horario = (data_obj).strftime('%H:%M:%S')  # Faço o Somatorio de TIMES e converto para STRING
             data_horario_inicio = datetime.strptime(horario, '%H:%M:%S')  # Converto novamente para OBJETO
             data_comparativa_1 = (data_horario_inicio + (timedelta(minutes=15)))  # Data inicial + 15min
-            dia_comparativo=(data_obj).weekday() #Dia da semana da data comparativa
-            dia_atual=dia_comparativo   #Dia da semana para comparação inicial
+            dia_comparativo = (data_obj).weekday()  # Dia da semana da data comparativa
+            dia_atual = dia_comparativo  # Dia da semana para comparação inicial
 
             # Contador do Loop
             nn = 0
             # Seto o primeiro valor do Eixo X e do Dia do Grupo 1
             eixo_x_temperatura_ar_mais[0][0] = data_comparativa_1
-            dia_do_grupo_temperatura_ar_mais[0][0]=dia_comparativo
+            dia_do_grupo_temperatura_ar_mais[0][0] = dia_comparativo
 
             # Loop Comparativo
             while sair == 0:
                 # Se for a 1ª vez do loop, não incrementa os eixos
                 if nn != 0:
                     # Incremento o vetor X com 1 posição a mais
-                    eixo_x_temperatura_ar_mais = np.resize(eixo_x_temperatura_ar_mais, (1, len(eixo_x_temperatura_ar_mais[0]) + 1))
+                    eixo_x_temperatura_ar_mais = np.resize(eixo_x_temperatura_ar_mais,
+                                                           (1, len(eixo_x_temperatura_ar_mais[0]) + 1))
                     # Atribuo o valor para a posição Criada
                     eixo_x_temperatura_ar_mais[0][quantidade_grupos_temperatura_ar_mais] = data_comparativa_1
 
                     # Incremento o vetor dia_do_Grupo com 1 posição a mais
-                    dia_do_grupo_temperatura_ar_mais = np.resize(dia_do_grupo_temperatura_ar_mais, (1, len(dia_do_grupo_temperatura_ar_mais[0]) + 1))
+                    dia_do_grupo_temperatura_ar_mais = np.resize(dia_do_grupo_temperatura_ar_mais,
+                                                                 (1, len(dia_do_grupo_temperatura_ar_mais[0]) + 1))
                     # Atribuo o valor para a posição Criada
                     dia_do_grupo_temperatura_ar_mais[0][quantidade_grupos_temperatura_ar_mais] = dia_comparativo
 
@@ -2368,16 +2366,19 @@ class MyWin(QtWidgets.QMainWindow):
                         eixo_y_temperatura_ar_mais[0][jj] = eixo_y_aux_temperatura_ar_mais[0][jj]
 
                 # Loop Comparativo entre datas
-                while data_horario_inicio <= data_comparativa_1 and nn < (n_temperatura_ar_mais - 1) and dia_atual==dia_comparativo:
-                #while data_horario_inicio <= data_comparativa_1 and nn < ( n_temperatura_ar_mais - 1):
+                while data_horario_inicio <= data_comparativa_1 and nn < (
+                        n_temperatura_ar_mais - 1) and dia_atual == dia_comparativo:
+                    # while data_horario_inicio <= data_comparativa_1 and nn < ( n_temperatura_ar_mais - 1):
                     # Se tiver dentro dos 15min, Incrementa o valor do eixo Y
-                    eixo_y_temperatura_ar_mais[0][quantidade_grupos_temperatura_ar_mais] = eixo_y_temperatura_ar_mais[0][quantidade_grupos_temperatura_ar_mais] + 1
+                    eixo_y_temperatura_ar_mais[0][quantidade_grupos_temperatura_ar_mais] = \
+                    eixo_y_temperatura_ar_mais[0][quantidade_grupos_temperatura_ar_mais] + 1
                     nn = nn + 1
                     # Capto a nova Data, e deixo pronto pra nova passagem do loop
-                    data_obj = datetime.strptime(mac_temperatura_ar_mais[nn][2],'%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
+                    data_obj = datetime.strptime(mac_temperatura_ar_mais[nn][2],
+                                                 '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
                     horario = (data_obj).strftime('%H:%M:%S')  # Faço o Somatorio de TIMES e converto para STRING
                     data_horario_inicio = datetime.strptime(horario, '%H:%M:%S')  # Converto novamente para OBJETO
-                    #Data em dia da Semana
+                    # Data em dia da Semana
                     dia_atual = (data_obj).weekday()
 
                 # Quando sai do Loop, um novo grupo de datas é formado.
@@ -2386,26 +2387,29 @@ class MyWin(QtWidgets.QMainWindow):
                 # Se a contagem não for a ultima, atribuo um novo valor pra ultima data
                 if nn != n_temperatura_ar_mais - 1:
                     data_comparativa_1 = (data_horario_inicio + timedelta(minutes=15))
-                    dia_comparativo=(data_obj).weekday()
+                    dia_comparativo = (data_obj).weekday()
                 # Se a contagem for a ultima, ele atribui a saida do loop geral
                 if (nn == (n_temperatura_ar_mais - 1)):
                     sair = 1
 
             # Apos sair o loop, ele compara a ultima data (que não é comparada com o loop anterior)
             if data_horario_inicio <= data_comparativa_1 and dia_atual == dia_comparativo:
-            #if data_horario_inicio <= data_comparativa_1:
+                # if data_horario_inicio <= data_comparativa_1:
                 # Se for o mesmo intervalo de 15min, atribui o valor para o Eixo Y
-                eixo_y_temperatura_ar_mais[0][quantidade_grupos_temperatura_ar_mais - 1] = eixo_y_temperatura_ar_mais[0][quantidade_grupos_temperatura_ar_mais - 1] + 1
+                eixo_y_temperatura_ar_mais[0][quantidade_grupos_temperatura_ar_mais - 1] = \
+                eixo_y_temperatura_ar_mais[0][quantidade_grupos_temperatura_ar_mais - 1] + 1
             else:
                 # Senao, cria um novo grupo, um novo Eixo X
                 quantidade_grupos_temperatura_ar_mais = quantidade_grupos_temperatura_ar_mais + 1
-                eixo_x_temperatura_ar_mais = np.resize(eixo_x_temperatura_ar_mais, (1, len(eixo_x_temperatura_ar_mais[0]) + 1))
+                eixo_x_temperatura_ar_mais = np.resize(eixo_x_temperatura_ar_mais,
+                                                       (1, len(eixo_x_temperatura_ar_mais[0]) + 1))
                 eixo_x_temperatura_ar_mais[0][quantidade_grupos_temperatura_ar_mais - 1] = data_comparativa_1
 
                 # Incremento o vetor dia_doGrupo com 1 posição a mais
-                dia_do_grupo_temperatura_ar_mais = np.resize(dia_do_grupo_temperatura_ar_mais, (1, len(dia_do_grupo_temperatura_ar_mais[0]) + 1))
+                dia_do_grupo_temperatura_ar_mais = np.resize(dia_do_grupo_temperatura_ar_mais,
+                                                             (1, len(dia_do_grupo_temperatura_ar_mais[0]) + 1))
                 # Atribuo o valor para a posição Criada
-                dia_do_grupo_temperatura_ar_mais[0][quantidade_grupos_temperatura_ar_mais-1] = dia_atual
+                dia_do_grupo_temperatura_ar_mais[0][quantidade_grupos_temperatura_ar_mais - 1] = dia_atual
 
                 # Cria um novo valor pro Eixo Y, e atribui os valores antigos pro novo Eixo Y
                 eixo_y_aux_temperatura_ar_mais = eixo_y_temperatura_ar_mais[:]
@@ -2415,7 +2419,8 @@ class MyWin(QtWidgets.QMainWindow):
 
                 # Atribui novos valores pros eixos X e Y
                 eixo_x_temperatura_ar_mais[0][quantidade_grupos_temperatura_ar_mais - 1] = data_horario_inicio
-                eixo_y_temperatura_ar_mais[0][quantidade_grupos_temperatura_ar_mais - 1] = eixo_y_temperatura_ar_mais[0][ quantidade_grupos_temperatura_ar_mais - 1] + 1
+                eixo_y_temperatura_ar_mais[0][quantidade_grupos_temperatura_ar_mais - 1] = \
+                eixo_y_temperatura_ar_mais[0][quantidade_grupos_temperatura_ar_mais - 1] + 1
 
             # Apresenta os Vetores
             # Grupos Misturados separados pelos dias das semanas a cada 15min.
@@ -2424,83 +2429,89 @@ class MyWin(QtWidgets.QMainWindow):
             # print(dia_do_grupo_temperatura_ar_mais)
 
             ################# Aqui ocorre o agrupamento dos dias IGUAIS a cada 15min ####################
-            #Criação do Vetor que ira receber os valores
-            eixo_x_agrupado_temperatura_ar_mais=np.zeros((1, 3), dtype='<U19')
-            n=0
-            #For que ira rodar por todos os valores baixados do BD
-            for kkk in range(0,7):
+            # Criação do Vetor que ira receber os valores
+            eixo_x_agrupado_temperatura_ar_mais = np.zeros((1, 3), dtype='<U19')
+            n = 0
+            # For que ira rodar por todos os valores baixados do BD
+            for kkk in range(0, 7):
                 for x in range(0, len(eixo_x_temperatura_ar_mais[0])):
-                    #Aqui verifica qual dia da semana é.
+                    # Aqui verifica qual dia da semana é.
                     if dia_do_grupo_temperatura_ar_mais[0][x] == kkk:
-                        #Se for a primeira rodada no For:
-                        if n==0:
-                            eixo_x_agrupado_temperatura_ar_mais[n][0]=eixo_x_temperatura_ar_mais[0][x]
-                            eixo_x_agrupado_temperatura_ar_mais[n][1]=eixo_y_temperatura_ar_mais[0][x]
-                            eixo_x_agrupado_temperatura_ar_mais[n][2]=dia_do_grupo_temperatura_ar_mais[0][x]
-                            n=1
-                        else:
-                            #Aumento o tamanho da minha matrix,e acrescenta os valores
-                            eixo_x_agrupado_temperatura_ar_mais = np.resize(eixo_x_agrupado_temperatura_ar_mais, (len(eixo_x_agrupado_temperatura_ar_mais) + 1, 3))
+                        # Se for a primeira rodada no For:
+                        if n == 0:
                             eixo_x_agrupado_temperatura_ar_mais[n][0] = eixo_x_temperatura_ar_mais[0][x]
                             eixo_x_agrupado_temperatura_ar_mais[n][1] = eixo_y_temperatura_ar_mais[0][x]
                             eixo_x_agrupado_temperatura_ar_mais[n][2] = dia_do_grupo_temperatura_ar_mais[0][x]
-                            n=n+1
+                            n = 1
+                        else:
+                            # Aumento o tamanho da minha matrix,e acrescenta os valores
+                            eixo_x_agrupado_temperatura_ar_mais = np.resize(eixo_x_agrupado_temperatura_ar_mais, (
+                            len(eixo_x_agrupado_temperatura_ar_mais) + 1, 3))
+                            eixo_x_agrupado_temperatura_ar_mais[n][0] = eixo_x_temperatura_ar_mais[0][x]
+                            eixo_x_agrupado_temperatura_ar_mais[n][1] = eixo_y_temperatura_ar_mais[0][x]
+                            eixo_x_agrupado_temperatura_ar_mais[n][2] = dia_do_grupo_temperatura_ar_mais[0][x]
+                            n = n + 1
 
-            #Criação dos vetores RESULTADO
+            # Criação dos vetores RESULTADO
             vetor_x_temperatura_ar_mais = np.zeros((1, 1), dtype='<U19')
             vetor_y_temperatura_ar_mais = np.zeros((1, 1))
             vetor_z_temperatura_ar_mais = np.zeros((1, 1), dtype='<U19')
             n = 0
-            #For que roda no tamanho da matrix ordenada
-            for x in range(0,len(eixo_x_agrupado_temperatura_ar_mais)):
-                if n==0:
-                    vetor_x_temperatura_ar_mais[0][0]=eixo_x_agrupado_temperatura_ar_mais[0][0]
-                    vetor_y_temperatura_ar_mais[0][0]=eixo_x_agrupado_temperatura_ar_mais[0][1]
-                    vetor_z_temperatura_ar_mais[0][0]=eixo_x_agrupado_temperatura_ar_mais[0][2]
-                    n=1
+            # For que roda no tamanho da matrix ordenada
+            for x in range(0, len(eixo_x_agrupado_temperatura_ar_mais)):
+                if n == 0:
+                    vetor_x_temperatura_ar_mais[0][0] = eixo_x_agrupado_temperatura_ar_mais[0][0]
+                    vetor_y_temperatura_ar_mais[0][0] = eixo_x_agrupado_temperatura_ar_mais[0][1]
+                    vetor_z_temperatura_ar_mais[0][0] = eixo_x_agrupado_temperatura_ar_mais[0][2]
+                    n = 1
                 else:
-                    #Criacao das datas para comparativo e AGRUPAR os horarios dos mesmos 15min
-                    data_obj = datetime.strptime(vetor_x_temperatura_ar_mais[0][n-1],'%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
+                    # Criacao das datas para comparativo e AGRUPAR os horarios dos mesmos 15min
+                    data_obj = datetime.strptime(vetor_x_temperatura_ar_mais[0][n - 1],
+                                                 '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
                     horario = (data_obj).strftime('%H:%M:%S')  # Faço o Somatorio de TIMES e converto para STRING
                     data_horario_inicio = datetime.strptime(horario, '%H:%M:%S')  # Converto novamente para OBJETO
                     data_comparativa_1 = (data_horario_inicio - (timedelta(minutes=15)))  # Data inicial + 15min
-                    data_comparativa_2=data_horario_inicio
-                    dia_comparativo = vetor_z_temperatura_ar_mais[0][n-1]
+                    data_comparativa_2 = data_horario_inicio
+                    dia_comparativo = vetor_z_temperatura_ar_mais[0][n - 1]
 
-
-                    data_obj2 = datetime.strptime(eixo_x_agrupado_temperatura_ar_mais[x][0],'%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
+                    data_obj2 = datetime.strptime(eixo_x_agrupado_temperatura_ar_mais[x][0],
+                                                  '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
                     horario2 = (data_obj2).strftime('%H:%M:%S')  # Faço o Somatorio de TIMES e converto para STRING
                     minha_data_horario2 = datetime.strptime(horario2, '%H:%M:%S')  # Converto novamente para OBJETO
-                    data_horario2=(minha_data_horario2 - (timedelta(minutes=15)))
+                    data_horario2 = (minha_data_horario2 - (timedelta(minutes=15)))
                     dia_atual = eixo_x_agrupado_temperatura_ar_mais[x][2]
                     ##Trava para caso o vetor acabe apenas com 1 contagem na ultima casa, neste caso, a datação dela deve ser diferente para comparação.
-                    if (x == (len(eixo_x_agrupado_temperatura_ar_mais) - 1)) and (eixo_x_agrupado_temperatura_ar_mais[x][1] == '1.0'):
+                    if (x == (len(eixo_x_agrupado_temperatura_ar_mais) - 1)) and (
+                            eixo_x_agrupado_temperatura_ar_mais[x][1] == '1.0'):
                         data_horario2 = (minha_data_horario2)
 
-                    #Se o horario atual estiver entre os 15min do horario do grupo e se for do mesmo dia, soma o valor de quantidades
-                    if data_horario2>data_comparativa_1 and data_horario2<data_comparativa_2 and dia_atual==dia_comparativo:
-                        vetor_y_temperatura_ar_mais[0][n-1]=vetor_y_temperatura_ar_mais[0][n-1]+float(eixo_x_agrupado_temperatura_ar_mais[x][1])
-                    #Se nao, aumento os vetores, e acrescento como um outro grupo
+                    # Se o horario atual estiver entre os 15min do horario do grupo e se for do mesmo dia, soma o valor de quantidades
+                    if data_horario2 > data_comparativa_1 and data_horario2 < data_comparativa_2 and dia_atual == dia_comparativo:
+                        vetor_y_temperatura_ar_mais[0][n - 1] = vetor_y_temperatura_ar_mais[0][n - 1] + float(
+                            eixo_x_agrupado_temperatura_ar_mais[x][1])
+                    # Se nao, aumento os vetores, e acrescento como um outro grupo
                     else:
                         # Incremento o vetor X com 1 posição a mais
-                        vetor_x_temperatura_ar_mais = np.resize(vetor_x_temperatura_ar_mais,(1,len(vetor_x_temperatura_ar_mais[0])+1))
-                        vetor_y_temperatura_ar_mais = np.resize(vetor_y_temperatura_ar_mais,(1, len(vetor_y_temperatura_ar_mais[0]) + 1))
-                        vetor_z_temperatura_ar_mais = np.resize(vetor_z_temperatura_ar_mais,(1, len(vetor_z_temperatura_ar_mais[0]) + 1))
-                        #Acrescento valores
+                        vetor_x_temperatura_ar_mais = np.resize(vetor_x_temperatura_ar_mais,
+                                                                (1, len(vetor_x_temperatura_ar_mais[0]) + 1))
+                        vetor_y_temperatura_ar_mais = np.resize(vetor_y_temperatura_ar_mais,
+                                                                (1, len(vetor_y_temperatura_ar_mais[0]) + 1))
+                        vetor_z_temperatura_ar_mais = np.resize(vetor_z_temperatura_ar_mais,
+                                                                (1, len(vetor_z_temperatura_ar_mais[0]) + 1))
+                        # Acrescento valores
                         vetor_x_temperatura_ar_mais[0][n] = eixo_x_agrupado_temperatura_ar_mais[x][0]
                         vetor_y_temperatura_ar_mais[0][n] = eixo_x_agrupado_temperatura_ar_mais[x][1]
-                        vetor_z_temperatura_ar_mais[0][n]=eixo_x_agrupado_temperatura_ar_mais[x][2]
-                        n=n+1
+                        vetor_z_temperatura_ar_mais[0][n] = eixo_x_agrupado_temperatura_ar_mais[x][2]
+                        n = n + 1
 
-            #Apresentação dos valores AGRUPADOS E ORDENADOS
+            # Apresentação dos valores AGRUPADOS E ORDENADOS
             # print(vetor_x_temperatura_ar_mais)
             # print(vetor_y_temperatura_ar_mais)
             # print(vetor_z_temperatura_ar_mais)
 
-
-            #Parametros de Configuração para Estatísticas
-            somatorio_temperatura_ar_mais=0
-            qtd_somatorio_temperatura_ar_mais=0
+            # Parametros de Configuração para Estatísticas
+            somatorio_temperatura_ar_mais = 0
+            qtd_somatorio_temperatura_ar_mais = 0
 
             # Capto o Valor da Taxa de Tendencia do BD
             # Executa o comando:
@@ -2514,51 +2525,53 @@ class MyWin(QtWidgets.QMainWindow):
                 print("Dados Insuficientes no Banco de Dados")
                 # Finaliza a conexão
 
-            #Loop para saber qual o total dos valores da ação
+            # Loop para saber qual o total dos valores da ação
             for n in range(0, len(eixo_x_temperatura_ar_mais[0])):
-                somatorio_temperatura_ar_mais=somatorio_temperatura_ar_mais+eixo_y_temperatura_ar_mais[0][n]
-            #Loop para saber quantos valores estão acima da Taxa de Tendencia
+                somatorio_temperatura_ar_mais = somatorio_temperatura_ar_mais + eixo_y_temperatura_ar_mais[0][n]
+            # Loop para saber quantos valores estão acima da Taxa de Tendencia
             for nn in range(0, len(vetor_x_temperatura_ar_mais[0])):
                 if (float(vetor_y_temperatura_ar_mais[0][nn]) / somatorio_temperatura_ar_mais) >= taxa_tendencia:
-                    qtd_somatorio_temperatura_ar_mais=qtd_somatorio_temperatura_ar_mais+1
+                    qtd_somatorio_temperatura_ar_mais = qtd_somatorio_temperatura_ar_mais + 1
 
-            #Proteção para nao criar o vetor e nao tentar inserir no BD se nao existir Tendencias.
-            if qtd_somatorio_temperatura_ar_mais>0:
-                k=0
-                #Criaçcao do Vetor
+            # Proteção para nao criar o vetor e nao tentar inserir no BD se nao existir Tendencias.
+            if qtd_somatorio_temperatura_ar_mais > 0:
+                k = 0
+                # Criaçcao do Vetor
                 tendencia_temperatura_ar_mais = np.zeros((qtd_somatorio_temperatura_ar_mais, 4), dtype='<U19')
-                vetor_x_temperatura_ar_mais_tendencia=np.zeros((1, qtd_somatorio_temperatura_ar_mais), dtype='<U19')
+                vetor_x_temperatura_ar_mais_tendencia = np.zeros((1, qtd_somatorio_temperatura_ar_mais), dtype='<U19')
                 vetor_y_temperatura_ar_mais_tendencia = np.zeros((1, qtd_somatorio_temperatura_ar_mais))
                 vetor_z_temperatura_ar_mais_tendencia = np.zeros((1, qtd_somatorio_temperatura_ar_mais), dtype='<U19')
-                #Loop para procurar novamente valores acima da Taxa de Tendencia
+                # Loop para procurar novamente valores acima da Taxa de Tendencia
                 for nn in range(0, len(vetor_x_temperatura_ar_mais[0])):
-                    #Condicação que compara cada valor com a Taxa de Tendencia
+                    # Condicação que compara cada valor com a Taxa de Tendencia
                     if (float(vetor_y_temperatura_ar_mais[0][nn]) / somatorio_temperatura_ar_mais) >= taxa_tendencia:
-                        #Atribuições do Vetor
-                        tendencia_temperatura_ar_mais[k][0]="Temperatura-Ar-Mais"
-                        tendencia_temperatura_ar_mais[k][1]=vetor_x_temperatura_ar_mais[0][nn]
-                        tendencia_temperatura_ar_mais[k][2]=vetor_z_temperatura_ar_mais[0][nn]
-                        tendencia_temperatura_ar_mais[k][3]=vetor_y_temperatura_ar_mais[0][nn]
+                        # Atribuições do Vetor
+                        tendencia_temperatura_ar_mais[k][0] = "Temperatura-Ar-Mais"
+                        tendencia_temperatura_ar_mais[k][1] = vetor_x_temperatura_ar_mais[0][nn]
+                        tendencia_temperatura_ar_mais[k][2] = vetor_z_temperatura_ar_mais[0][nn]
+                        tendencia_temperatura_ar_mais[k][3] = vetor_y_temperatura_ar_mais[0][nn]
                         # Atribui Vetor de Tendencia que vai para o gráfico
                         vetor_x_temperatura_ar_mais_tendencia[0][k] = vetor_x_temperatura_ar_mais[0][nn]
                         vetor_y_temperatura_ar_mais_tendencia[0][k] = vetor_y_temperatura_ar_mais[0][nn]
                         vetor_z_temperatura_ar_mais_tendencia[0][k] = vetor_z_temperatura_ar_mais[0][nn]
-                        k=k+1
+                        k = k + 1
 
                 ##########Inserção no BD#############
-                #DELETA VALORES DO BD PREVIAMENTE CONFIGURADOS
+                # DELETA VALORES DO BD PREVIAMENTE CONFIGURADOS
                 cursor.execute("DELETE FROM tendencias WHERE acao='Temperatura-Ar-Mais'")
-                #LOOP PARA INSERIR TODOS AS LINHAS DA MATRIZ
+                # LOOP PARA INSERIR TODOS AS LINHAS DA MATRIZ
                 for nn in range(0, len(tendencia_temperatura_ar_mais)):
                     # Executa o comando:
-                    cursor.execute("INSERT INTO tendencias (acao,horario,dia,valor) VALUES(%s,%s,%s,%s)",(tendencia_temperatura_ar_mais[nn][0], tendencia_temperatura_ar_mais[nn][1], tendencia_temperatura_ar_mais[nn][2], tendencia_temperatura_ar_mais[nn][3]))
+                    cursor.execute("INSERT INTO tendencias (acao,horario,dia,valor) VALUES(%s,%s,%s,%s)", (
+                    tendencia_temperatura_ar_mais[nn][0], tendencia_temperatura_ar_mais[nn][1],
+                    tendencia_temperatura_ar_mais[nn][2], tendencia_temperatura_ar_mais[nn][3]))
                 conexao.close()
                 print("Nova Tendência Registrada!")
 
-            #CASO NAO HAJA TENDENCIA
+            # CASO NAO HAJA TENDENCIA
             else:
                 print("Não há tendência")
-                #DELETA VALORES DO BD PREVIAMENTE CONFIGURADOS
+                # DELETA VALORES DO BD PREVIAMENTE CONFIGURADOS
                 cursor.execute("DELETE FROM tendencias WHERE acao='Temperatura-Ar-Mais'")
                 conexao.close()
                 # Cria o vetor com 1 posição
@@ -2569,15 +2582,18 @@ class MyWin(QtWidgets.QMainWindow):
                 vetor_y_temperatura_ar_mais_tendencia[0][0] = 0
                 vetor_z_temperatura_ar_mais_tendencia[0][0] = 0
 
-            self.update_graph_machine_learning(vetor_x_temperatura_ar_mais[0], vetor_y_temperatura_ar_mais[0], vetor_z_temperatura_ar_mais[0],vetor_x_temperatura_ar_mais_tendencia[0],vetor_y_temperatura_ar_mais_tendencia[0],vetor_z_temperatura_ar_mais_tendencia[0])
+            self.update_graph_machine_learning(vetor_x_temperatura_ar_mais[0], vetor_y_temperatura_ar_mais[0],
+                                               vetor_z_temperatura_ar_mais[0], vetor_x_temperatura_ar_mais_tendencia[0],
+                                               vetor_y_temperatura_ar_mais_tendencia[0],
+                                               vetor_z_temperatura_ar_mais_tendencia[0])
         except pymysql.err.OperationalError as e:
             print("Error while connecting to MySQL", e)
 
     def machine_learning_temperatura_ar_menos(self):
-        #Variaveis de Configuração
+        # Variaveis de Configuração
         qq = 0
         sair = 0
-        taxa_tendencia=0.5
+        taxa_tendencia = 0.5
         temperatura_ar_menos = 0
         n_temperatura_ar_menos = 0
         quantidade_grupos_temperatura_ar_menos = 0
@@ -2588,7 +2604,7 @@ class MyWin(QtWidgets.QMainWindow):
             cursor = conexao.cursor()
             # Executa o comando:
             cursor.execute("SELECT acao,valor,horario FROM historico_acoes ORDER BY TIME(horario) ASC")
-            #cursor.execute("SELECT acao,valor,horario FROM historico_acoes ORDER BY horario ASC")
+            # cursor.execute("SELECT acao,valor,horario FROM historico_acoes ORDER BY horario ASC")
 
             # Recupera o resultado:
             resultado = cursor.fetchall()
@@ -2598,15 +2614,15 @@ class MyWin(QtWidgets.QMainWindow):
                     mac_acao[qq][0] = linha[0]
                     mac_acao[qq][1] = linha[1]
                     mac_acao[qq][2] = linha[2]
-                    #Verifica a categoria da Função atual
+                    # Verifica a categoria da Função atual
                     if mac_acao[qq][0] == 'Temperatura-Ar-Menos':
                         temperatura_ar_menos = temperatura_ar_menos + 1
-                    #Contador de resultados
+                    # Contador de resultados
                     qq = qq + 1
-            #criação do vetorcom a quantidade de resultados
+            # criação do vetorcom a quantidade de resultados
             mac_temperatura_ar_menos = np.array([[0] * 3] * temperatura_ar_menos, dtype='<U22')
 
-            #Conta a quantidade de resultados, e atribui ao novo vetor
+            # Conta a quantidade de resultados, e atribui ao novo vetor
             for x in range(0, cursor.rowcount):
                 if mac_acao[x][0] == 'Temperatura-Ar-Menos':
                     mac_temperatura_ar_menos[n_temperatura_ar_menos] = mac_acao[x]
@@ -2619,33 +2635,35 @@ class MyWin(QtWidgets.QMainWindow):
             # Criação dos Eixos E Vetor do dia do grupo
             eixo_x_temperatura_ar_menos = np.zeros((1, 1), dtype='<U22')
             eixo_y_temperatura_ar_menos = np.zeros((1, 1))
-            dia_do_grupo_temperatura_ar_menos=np.zeros((1, 1),dtype='i4') #Torna o vetor, inteiro
+            dia_do_grupo_temperatura_ar_menos = np.zeros((1, 1), dtype='i4')  # Torna o vetor, inteiro
 
             # Criação da data inicial
             data_obj = datetime.strptime(mac_temperatura_ar_menos[0][2], '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
             horario = (data_obj).strftime('%H:%M:%S')  # Faço o Somatorio de TIMES e converto para STRING
             data_horario_inicio = datetime.strptime(horario, '%H:%M:%S')  # Converto novamente para OBJETO
             data_comparativa_1 = (data_horario_inicio + (timedelta(minutes=15)))  # Data inicial + 15min
-            dia_comparativo=(data_obj).weekday() #Dia da semana da data comparativa
-            dia_atual=dia_comparativo   #Dia da semana para comparação inicial
+            dia_comparativo = (data_obj).weekday()  # Dia da semana da data comparativa
+            dia_atual = dia_comparativo  # Dia da semana para comparação inicial
 
             # Contador do Loop
             nn = 0
             # Seto o primeiro valor do Eixo X e do Dia do Grupo 1
             eixo_x_temperatura_ar_menos[0][0] = data_comparativa_1
-            dia_do_grupo_temperatura_ar_menos[0][0]=dia_comparativo
+            dia_do_grupo_temperatura_ar_menos[0][0] = dia_comparativo
 
             # Loop Comparativo
             while sair == 0:
                 # Se for a 1ª vez do loop, não incrementa os eixos
                 if nn != 0:
                     # Incremento o vetor X com 1 posição a mais
-                    eixo_x_temperatura_ar_menos = np.resize(eixo_x_temperatura_ar_menos, (1, len(eixo_x_temperatura_ar_menos[0]) + 1))
+                    eixo_x_temperatura_ar_menos = np.resize(eixo_x_temperatura_ar_menos,
+                                                            (1, len(eixo_x_temperatura_ar_menos[0]) + 1))
                     # Atribuo o valor para a posição Criada
                     eixo_x_temperatura_ar_menos[0][quantidade_grupos_temperatura_ar_menos] = data_comparativa_1
 
                     # Incremento o vetor dia_do_Grupo com 1 posição a mais
-                    dia_do_grupo_temperatura_ar_menos = np.resize(dia_do_grupo_temperatura_ar_menos, (1, len(dia_do_grupo_temperatura_ar_menos[0]) + 1))
+                    dia_do_grupo_temperatura_ar_menos = np.resize(dia_do_grupo_temperatura_ar_menos,
+                                                                  (1, len(dia_do_grupo_temperatura_ar_menos[0]) + 1))
                     # Atribuo o valor para a posição Criada
                     dia_do_grupo_temperatura_ar_menos[0][quantidade_grupos_temperatura_ar_menos] = dia_comparativo
 
@@ -2658,16 +2676,19 @@ class MyWin(QtWidgets.QMainWindow):
                         eixo_y_temperatura_ar_menos[0][jj] = eixo_y_aux_temperatura_ar_menos[0][jj]
 
                 # Loop Comparativo entre datas
-                while data_horario_inicio <= data_comparativa_1 and nn < (n_temperatura_ar_menos - 1) and dia_atual==dia_comparativo:
-                #while data_horario_inicio <= data_comparativa_1 and nn < ( n_temperatura_ar_menos - 1):
+                while data_horario_inicio <= data_comparativa_1 and nn < (
+                        n_temperatura_ar_menos - 1) and dia_atual == dia_comparativo:
+                    # while data_horario_inicio <= data_comparativa_1 and nn < ( n_temperatura_ar_menos - 1):
                     # Se tiver dentro dos 15min, Incrementa o valor do eixo Y
-                    eixo_y_temperatura_ar_menos[0][quantidade_grupos_temperatura_ar_menos] = eixo_y_temperatura_ar_menos[0][quantidade_grupos_temperatura_ar_menos] + 1
+                    eixo_y_temperatura_ar_menos[0][quantidade_grupos_temperatura_ar_menos] = \
+                    eixo_y_temperatura_ar_menos[0][quantidade_grupos_temperatura_ar_menos] + 1
                     nn = nn + 1
                     # Capto a nova Data, e deixo pronto pra nova passagem do loop
-                    data_obj = datetime.strptime(mac_temperatura_ar_menos[nn][2],'%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
+                    data_obj = datetime.strptime(mac_temperatura_ar_menos[nn][2],
+                                                 '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
                     horario = (data_obj).strftime('%H:%M:%S')  # Faço o Somatorio de TIMES e converto para STRING
                     data_horario_inicio = datetime.strptime(horario, '%H:%M:%S')  # Converto novamente para OBJETO
-                    #Data em dia da Semana
+                    # Data em dia da Semana
                     dia_atual = (data_obj).weekday()
 
                 # Quando sai do Loop, um novo grupo de datas é formado.
@@ -2676,26 +2697,29 @@ class MyWin(QtWidgets.QMainWindow):
                 # Se a contagem não for a ultima, atribuo um novo valor pra ultima data
                 if nn != n_temperatura_ar_menos - 1:
                     data_comparativa_1 = (data_horario_inicio + timedelta(minutes=15))
-                    dia_comparativo=(data_obj).weekday()
+                    dia_comparativo = (data_obj).weekday()
                 # Se a contagem for a ultima, ele atribui a saida do loop geral
                 if (nn == (n_temperatura_ar_menos - 1)):
                     sair = 1
 
             # Apos sair o loop, ele compara a ultima data (que não é comparada com o loop anterior)
             if data_horario_inicio <= data_comparativa_1 and dia_atual == dia_comparativo:
-            #if data_horario_inicio <= data_comparativa_1:
+                # if data_horario_inicio <= data_comparativa_1:
                 # Se for o mesmo intervalo de 15min, atribui o valor para o Eixo Y
-                eixo_y_temperatura_ar_menos[0][quantidade_grupos_temperatura_ar_menos - 1] = eixo_y_temperatura_ar_menos[0][quantidade_grupos_temperatura_ar_menos - 1] + 1
+                eixo_y_temperatura_ar_menos[0][quantidade_grupos_temperatura_ar_menos - 1] = \
+                eixo_y_temperatura_ar_menos[0][quantidade_grupos_temperatura_ar_menos - 1] + 1
             else:
                 # Senao, cria um novo grupo, um novo Eixo X
                 quantidade_grupos_temperatura_ar_menos = quantidade_grupos_temperatura_ar_menos + 1
-                eixo_x_temperatura_ar_menos = np.resize(eixo_x_temperatura_ar_menos, (1, len(eixo_x_temperatura_ar_menos[0]) + 1))
+                eixo_x_temperatura_ar_menos = np.resize(eixo_x_temperatura_ar_menos,
+                                                        (1, len(eixo_x_temperatura_ar_menos[0]) + 1))
                 eixo_x_temperatura_ar_menos[0][quantidade_grupos_temperatura_ar_menos - 1] = data_comparativa_1
 
                 # Incremento o vetor dia_doGrupo com 1 posição a mais
-                dia_do_grupo_temperatura_ar_menos = np.resize(dia_do_grupo_temperatura_ar_menos, (1, len(dia_do_grupo_temperatura_ar_menos[0]) + 1))
+                dia_do_grupo_temperatura_ar_menos = np.resize(dia_do_grupo_temperatura_ar_menos,
+                                                              (1, len(dia_do_grupo_temperatura_ar_menos[0]) + 1))
                 # Atribuo o valor para a posição Criada
-                dia_do_grupo_temperatura_ar_menos[0][quantidade_grupos_temperatura_ar_menos-1] = dia_atual
+                dia_do_grupo_temperatura_ar_menos[0][quantidade_grupos_temperatura_ar_menos - 1] = dia_atual
 
                 # Cria um novo valor pro Eixo Y, e atribui os valores antigos pro novo Eixo Y
                 eixo_y_aux_temperatura_ar_menos = eixo_y_temperatura_ar_menos[:]
@@ -2705,7 +2729,8 @@ class MyWin(QtWidgets.QMainWindow):
 
                 # Atribui novos valores pros eixos X e Y
                 eixo_x_temperatura_ar_menos[0][quantidade_grupos_temperatura_ar_menos - 1] = data_horario_inicio
-                eixo_y_temperatura_ar_menos[0][quantidade_grupos_temperatura_ar_menos - 1] = eixo_y_temperatura_ar_menos[0][ quantidade_grupos_temperatura_ar_menos - 1] + 1
+                eixo_y_temperatura_ar_menos[0][quantidade_grupos_temperatura_ar_menos - 1] = \
+                eixo_y_temperatura_ar_menos[0][quantidade_grupos_temperatura_ar_menos - 1] + 1
 
             # Apresenta os Vetores
             # Grupos Misturados separados pelos dias das semanas a cada 15min.
@@ -2714,84 +2739,89 @@ class MyWin(QtWidgets.QMainWindow):
             # print(dia_do_grupo_temperatura_ar_menos)
 
             ################# Aqui ocorre o agrupamento dos dias IGUAIS a cada 15min ####################
-            #Criação do Vetor que ira receber os valores
-            eixo_x_agrupado_temperatura_ar_menos=np.zeros((1, 3), dtype='<U22')
-            n=0
-            #For que ira rodar por todos os valores baixados do BD
-            for kkk in range(0,7):
+            # Criação do Vetor que ira receber os valores
+            eixo_x_agrupado_temperatura_ar_menos = np.zeros((1, 3), dtype='<U22')
+            n = 0
+            # For que ira rodar por todos os valores baixados do BD
+            for kkk in range(0, 7):
                 for x in range(0, len(eixo_x_temperatura_ar_menos[0])):
-                    #Aqui verifica qual dia da semana é.
+                    # Aqui verifica qual dia da semana é.
                     if dia_do_grupo_temperatura_ar_menos[0][x] == kkk:
-                        #Se for a primeira rodada no For:
-                        if n==0:
-                            eixo_x_agrupado_temperatura_ar_menos[n][0]=eixo_x_temperatura_ar_menos[0][x]
-                            eixo_x_agrupado_temperatura_ar_menos[n][1]=eixo_y_temperatura_ar_menos[0][x]
-                            eixo_x_agrupado_temperatura_ar_menos[n][2]=dia_do_grupo_temperatura_ar_menos[0][x]
-                            n=1
-                        else:
-                            #Aumento o tamanho da minha matrix,e acrescenta os valores
-                            eixo_x_agrupado_temperatura_ar_menos = np.resize(eixo_x_agrupado_temperatura_ar_menos, (len(eixo_x_agrupado_temperatura_ar_menos) + 1, 3))
+                        # Se for a primeira rodada no For:
+                        if n == 0:
                             eixo_x_agrupado_temperatura_ar_menos[n][0] = eixo_x_temperatura_ar_menos[0][x]
                             eixo_x_agrupado_temperatura_ar_menos[n][1] = eixo_y_temperatura_ar_menos[0][x]
                             eixo_x_agrupado_temperatura_ar_menos[n][2] = dia_do_grupo_temperatura_ar_menos[0][x]
-                            n=n+1
-            #Criação dos vetores RESULTADO
+                            n = 1
+                        else:
+                            # Aumento o tamanho da minha matrix,e acrescenta os valores
+                            eixo_x_agrupado_temperatura_ar_menos = np.resize(eixo_x_agrupado_temperatura_ar_menos, (
+                            len(eixo_x_agrupado_temperatura_ar_menos) + 1, 3))
+                            eixo_x_agrupado_temperatura_ar_menos[n][0] = eixo_x_temperatura_ar_menos[0][x]
+                            eixo_x_agrupado_temperatura_ar_menos[n][1] = eixo_y_temperatura_ar_menos[0][x]
+                            eixo_x_agrupado_temperatura_ar_menos[n][2] = dia_do_grupo_temperatura_ar_menos[0][x]
+                            n = n + 1
+            # Criação dos vetores RESULTADO
             vetor_x_temperatura_ar_menos = np.zeros((1, 1), dtype='<U22')
             vetor_y_temperatura_ar_menos = np.zeros((1, 1))
             vetor_z_temperatura_ar_menos = np.zeros((1, 1), dtype='<U22')
             n = 0
-            #For que roda no tamanho da matrix ordenada
-            for x in range(0,len(eixo_x_agrupado_temperatura_ar_menos)):
-                if n==0:
-                    vetor_x_temperatura_ar_menos[0][0]=eixo_x_agrupado_temperatura_ar_menos[0][0]
-                    vetor_y_temperatura_ar_menos[0][0]=eixo_x_agrupado_temperatura_ar_menos[0][1]
-                    vetor_z_temperatura_ar_menos[0][0]=eixo_x_agrupado_temperatura_ar_menos[0][2]
-                    n=1
+            # For que roda no tamanho da matrix ordenada
+            for x in range(0, len(eixo_x_agrupado_temperatura_ar_menos)):
+                if n == 0:
+                    vetor_x_temperatura_ar_menos[0][0] = eixo_x_agrupado_temperatura_ar_menos[0][0]
+                    vetor_y_temperatura_ar_menos[0][0] = eixo_x_agrupado_temperatura_ar_menos[0][1]
+                    vetor_z_temperatura_ar_menos[0][0] = eixo_x_agrupado_temperatura_ar_menos[0][2]
+                    n = 1
                 else:
-                    #Criacao das datas para comparativo e AGRUPAR os horarios dos mesmos 15min
-                    data_obj = datetime.strptime(vetor_x_temperatura_ar_menos[0][n-1],'%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
+                    # Criacao das datas para comparativo e AGRUPAR os horarios dos mesmos 15min
+                    data_obj = datetime.strptime(vetor_x_temperatura_ar_menos[0][n - 1],
+                                                 '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
                     horario = (data_obj).strftime('%H:%M:%S')  # Faço o Somatorio de TIMES e converto para STRING
                     data_horario_inicio = datetime.strptime(horario, '%H:%M:%S')  # Converto novamente para OBJETO
                     data_comparativa_1 = (data_horario_inicio - (timedelta(minutes=15)))  # Data inicial + 15min
-                    data_comparativa_2=data_horario_inicio
-                    dia_comparativo = vetor_z_temperatura_ar_menos[0][n-1]
+                    data_comparativa_2 = data_horario_inicio
+                    dia_comparativo = vetor_z_temperatura_ar_menos[0][n - 1]
 
-
-                    data_obj2 = datetime.strptime(eixo_x_agrupado_temperatura_ar_menos[x][0],'%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
+                    data_obj2 = datetime.strptime(eixo_x_agrupado_temperatura_ar_menos[x][0],
+                                                  '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
                     horario2 = (data_obj2).strftime('%H:%M:%S')  # Faço o Somatorio de TIMES e converto para STRING
                     minha_data_horario2 = datetime.strptime(horario2, '%H:%M:%S')  # Converto novamente para OBJETO
                     data_horario2 = (minha_data_horario2 - (timedelta(minutes=15)))
                     dia_atual = eixo_x_agrupado_temperatura_ar_menos[x][2]
 
                     ##Trava para caso o vetor acabe apenas com 1 contagem na ultima casa, neste caso, a datação dela deve ser diferente para comparação.
-                    if (x == (len(eixo_x_agrupado_temperatura_ar_menos)-1)) and (eixo_x_agrupado_temperatura_ar_menos[x][1]=='1.0'):
-                        data_horario2 = (minha_data_horario2 )
+                    if (x == (len(eixo_x_agrupado_temperatura_ar_menos) - 1)) and (
+                            eixo_x_agrupado_temperatura_ar_menos[x][1] == '1.0'):
+                        data_horario2 = (minha_data_horario2)
 
-
-                    #Se o horario atual estiver entre os 15min do horario do grupo e se for do mesmo dia, soma o valor de quantidades
-                    if data_horario2>data_comparativa_1 and data_horario2<data_comparativa_2 and dia_atual==dia_comparativo:
-                        vetor_y_temperatura_ar_menos[0][n-1]=vetor_y_temperatura_ar_menos[0][n-1]+float(eixo_x_agrupado_temperatura_ar_menos[x][1])
-                    #Se nao, aumento os vetores, e acrescento como um outro grupo
+                    # Se o horario atual estiver entre os 15min do horario do grupo e se for do mesmo dia, soma o valor de quantidades
+                    if data_horario2 > data_comparativa_1 and data_horario2 < data_comparativa_2 and dia_atual == dia_comparativo:
+                        vetor_y_temperatura_ar_menos[0][n - 1] = vetor_y_temperatura_ar_menos[0][n - 1] + float(
+                            eixo_x_agrupado_temperatura_ar_menos[x][1])
+                    # Se nao, aumento os vetores, e acrescento como um outro grupo
                     else:
                         # Incremento o vetor X com 1 posição a mais
-                        vetor_x_temperatura_ar_menos = np.resize(vetor_x_temperatura_ar_menos,(1,len(vetor_x_temperatura_ar_menos[0])+1))
-                        vetor_y_temperatura_ar_menos = np.resize(vetor_y_temperatura_ar_menos,(1, len(vetor_y_temperatura_ar_menos[0]) + 1))
-                        vetor_z_temperatura_ar_menos = np.resize(vetor_z_temperatura_ar_menos,(1, len(vetor_z_temperatura_ar_menos[0]) + 1))
-                        #Acrescento valores
+                        vetor_x_temperatura_ar_menos = np.resize(vetor_x_temperatura_ar_menos,
+                                                                 (1, len(vetor_x_temperatura_ar_menos[0]) + 1))
+                        vetor_y_temperatura_ar_menos = np.resize(vetor_y_temperatura_ar_menos,
+                                                                 (1, len(vetor_y_temperatura_ar_menos[0]) + 1))
+                        vetor_z_temperatura_ar_menos = np.resize(vetor_z_temperatura_ar_menos,
+                                                                 (1, len(vetor_z_temperatura_ar_menos[0]) + 1))
+                        # Acrescento valores
                         vetor_x_temperatura_ar_menos[0][n] = eixo_x_agrupado_temperatura_ar_menos[x][0]
                         vetor_y_temperatura_ar_menos[0][n] = eixo_x_agrupado_temperatura_ar_menos[x][1]
-                        vetor_z_temperatura_ar_menos[0][n]=eixo_x_agrupado_temperatura_ar_menos[x][2]
-                        n=n+1
+                        vetor_z_temperatura_ar_menos[0][n] = eixo_x_agrupado_temperatura_ar_menos[x][2]
+                        n = n + 1
 
-            #Apresentação dos valores AGRUPADOS E ORDENADOS
+            # Apresentação dos valores AGRUPADOS E ORDENADOS
             # print(vetor_x_temperatura_ar_menos)
             # print(vetor_y_temperatura_ar_menos)
             # print(vetor_z_temperatura_ar_menos)
 
-
-            #Parametros de Configuração para Estatísticas
-            somatorio_temperatura_ar_menos=0
-            qtd_somatorio_temperatura_ar_menos=0
+            # Parametros de Configuração para Estatísticas
+            somatorio_temperatura_ar_menos = 0
+            qtd_somatorio_temperatura_ar_menos = 0
 
             # Capto o Valor da Taxa de Tendencia do BD
             # Executa o comando:
@@ -2805,50 +2835,52 @@ class MyWin(QtWidgets.QMainWindow):
                 print("Dados Insuficientes no Banco de Dados")
                 # Finaliza a conexão
 
-            #Loop para saber qual o total dos valores da ação
+            # Loop para saber qual o total dos valores da ação
             for n in range(0, len(eixo_x_temperatura_ar_menos[0])):
-                somatorio_temperatura_ar_menos=somatorio_temperatura_ar_menos+eixo_y_temperatura_ar_menos[0][n]
-            #Loop para saber quantos valores estão acima da Taxa de Tendencia
+                somatorio_temperatura_ar_menos = somatorio_temperatura_ar_menos + eixo_y_temperatura_ar_menos[0][n]
+            # Loop para saber quantos valores estão acima da Taxa de Tendencia
             for nn in range(0, len(vetor_x_temperatura_ar_menos[0])):
                 if (float(vetor_y_temperatura_ar_menos[0][nn]) / somatorio_temperatura_ar_menos) >= taxa_tendencia:
-                    qtd_somatorio_temperatura_ar_menos=qtd_somatorio_temperatura_ar_menos+1
+                    qtd_somatorio_temperatura_ar_menos = qtd_somatorio_temperatura_ar_menos + 1
 
-            #Proteção para nao criar o vetor e nao tentar inserir no BD se nao existir Tendencias.
-            if qtd_somatorio_temperatura_ar_menos>0:
-                k=0
-                #Criaçcao do Vetor
+            # Proteção para nao criar o vetor e nao tentar inserir no BD se nao existir Tendencias.
+            if qtd_somatorio_temperatura_ar_menos > 0:
+                k = 0
+                # Criaçcao do Vetor
                 tendencia_temperatura_ar_menos = np.zeros((qtd_somatorio_temperatura_ar_menos, 4), dtype='<U22')
-                vetor_x_temperatura_ar_menos_tendencia= np.zeros((1, qtd_somatorio_temperatura_ar_menos), dtype='<U22')
+                vetor_x_temperatura_ar_menos_tendencia = np.zeros((1, qtd_somatorio_temperatura_ar_menos), dtype='<U22')
                 vetor_y_temperatura_ar_menos_tendencia = np.zeros((1, qtd_somatorio_temperatura_ar_menos))
                 vetor_z_temperatura_ar_menos_tendencia = np.zeros((1, qtd_somatorio_temperatura_ar_menos), dtype='<U22')
-                #Loop para procurar novamente valores acima da Taxa de Tendencia
+                # Loop para procurar novamente valores acima da Taxa de Tendencia
                 for nn in range(0, len(vetor_x_temperatura_ar_menos[0])):
-                    #Condicação que compara cada valor com a Taxa de Tendencia
+                    # Condicação que compara cada valor com a Taxa de Tendencia
                     if (float(vetor_y_temperatura_ar_menos[0][nn]) / somatorio_temperatura_ar_menos) >= taxa_tendencia:
-                        #Atribuições do Vetor
-                        tendencia_temperatura_ar_menos[k][0]="Temperatura-Ar-Menos"
-                        tendencia_temperatura_ar_menos[k][1]=vetor_x_temperatura_ar_menos[0][nn]
-                        tendencia_temperatura_ar_menos[k][2]=vetor_z_temperatura_ar_menos[0][nn]
-                        tendencia_temperatura_ar_menos[k][3]=vetor_y_temperatura_ar_menos[0][nn]
-                        vetor_x_temperatura_ar_menos_tendencia[0][k]=vetor_x_temperatura_ar_menos[0][nn]
-                        vetor_y_temperatura_ar_menos_tendencia[0][k]=vetor_y_temperatura_ar_menos[0][nn]
-                        vetor_z_temperatura_ar_menos_tendencia[0][k]=vetor_z_temperatura_ar_menos[0][nn]
-                        k=k+1
+                        # Atribuições do Vetor
+                        tendencia_temperatura_ar_menos[k][0] = "Temperatura-Ar-Menos"
+                        tendencia_temperatura_ar_menos[k][1] = vetor_x_temperatura_ar_menos[0][nn]
+                        tendencia_temperatura_ar_menos[k][2] = vetor_z_temperatura_ar_menos[0][nn]
+                        tendencia_temperatura_ar_menos[k][3] = vetor_y_temperatura_ar_menos[0][nn]
+                        vetor_x_temperatura_ar_menos_tendencia[0][k] = vetor_x_temperatura_ar_menos[0][nn]
+                        vetor_y_temperatura_ar_menos_tendencia[0][k] = vetor_y_temperatura_ar_menos[0][nn]
+                        vetor_z_temperatura_ar_menos_tendencia[0][k] = vetor_z_temperatura_ar_menos[0][nn]
+                        k = k + 1
 
                 ##########Inserção no BD#############
-                #DELETA VALORES DO BD PREVIAMENTE CONFIGURADOS
+                # DELETA VALORES DO BD PREVIAMENTE CONFIGURADOS
                 cursor.execute("DELETE FROM tendencias WHERE acao='Temperatura-Ar-Menos'")
-                #LOOP PARA INSERIR TODOS AS LINHAS DA MATRIZ
+                # LOOP PARA INSERIR TODOS AS LINHAS DA MATRIZ
                 for nn in range(0, len(tendencia_temperatura_ar_menos)):
                     # Executa o comando:
-                    cursor.execute("INSERT INTO tendencias (acao,horario,dia,valor) VALUES(%s,%s,%s,%s)",(tendencia_temperatura_ar_menos[nn][0], tendencia_temperatura_ar_menos[nn][1], tendencia_temperatura_ar_menos[nn][2], tendencia_temperatura_ar_menos[nn][3]))
+                    cursor.execute("INSERT INTO tendencias (acao,horario,dia,valor) VALUES(%s,%s,%s,%s)", (
+                    tendencia_temperatura_ar_menos[nn][0], tendencia_temperatura_ar_menos[nn][1],
+                    tendencia_temperatura_ar_menos[nn][2], tendencia_temperatura_ar_menos[nn][3]))
                 conexao.close()
                 print("Nova Tendência Registrada!")
 
-            #CASO NAO HAJA TENDENCIA
+            # CASO NAO HAJA TENDENCIA
             else:
                 print("Não há tendência")
-                #DELETA VALORES DO BD PREVIAMENTE CONFIGURADOS
+                # DELETA VALORES DO BD PREVIAMENTE CONFIGURADOS
                 cursor.execute("DELETE FROM tendencias WHERE acao='Temperatura-Ar-Menos'")
                 conexao.close()
                 # Cria o vetor com 1 posição
@@ -2859,7 +2891,11 @@ class MyWin(QtWidgets.QMainWindow):
                 vetor_y_temperatura_ar_menos_tendencia[0][0] = 0
                 vetor_z_temperatura_ar_menos_tendencia[0][0] = 0
 
-            self.update_graph_machine_learning(vetor_x_temperatura_ar_menos[0], vetor_y_temperatura_ar_menos[0], vetor_z_temperatura_ar_menos[0],vetor_x_temperatura_ar_menos_tendencia[0],vetor_y_temperatura_ar_menos_tendencia[0],vetor_z_temperatura_ar_menos_tendencia[0])
+            self.update_graph_machine_learning(vetor_x_temperatura_ar_menos[0], vetor_y_temperatura_ar_menos[0],
+                                               vetor_z_temperatura_ar_menos[0],
+                                               vetor_x_temperatura_ar_menos_tendencia[0],
+                                               vetor_y_temperatura_ar_menos_tendencia[0],
+                                               vetor_z_temperatura_ar_menos_tendencia[0])
         except pymysql.err.OperationalError as e:
             print("Error while connecting to MySQL", e)
 
@@ -2936,7 +2972,7 @@ class MyWin(QtWidgets.QMainWindow):
 
                     # Incremento o vetor dia_do_Grupo com 1 posição a mais
                     dia_do_grupo_power_ar_on = np.resize(dia_do_grupo_power_ar_on,
-                                                          (1, len(dia_do_grupo_power_ar_on[0]) + 1))
+                                                         (1, len(dia_do_grupo_power_ar_on[0]) + 1))
                     # Atribuo o valor para a posição Criada
                     dia_do_grupo_power_ar_on[0][quantidade_grupos_power_ar_on] = dia_comparativo
 
@@ -2954,7 +2990,7 @@ class MyWin(QtWidgets.QMainWindow):
                     # while data_horario_inicio <= data_comparativa_1 and nn < ( n_power_ar_on - 1):
                     # Se tiver dentro dos 15min, Incrementa o valor do eixo Y
                     eixo_y_power_ar_on[0][quantidade_grupos_power_ar_on] = eixo_y_power_ar_on[0][
-                                                                                 quantidade_grupos_power_ar_on] + 1
+                                                                               quantidade_grupos_power_ar_on] + 1
                     nn = nn + 1
                     # Capto a nova Data, e deixo pronto pra nova passagem do loop
                     data_obj = datetime.strptime(mac_power_ar_on[nn][2],
@@ -2980,7 +3016,7 @@ class MyWin(QtWidgets.QMainWindow):
                 # if data_horario_inicio <= data_comparativa_1:
                 # Se for o mesmo intervalo de 15min, atribui o valor para o Eixo Y
                 eixo_y_power_ar_on[0][quantidade_grupos_power_ar_on - 1] = eixo_y_power_ar_on[0][
-                                                                                 quantidade_grupos_power_ar_on - 1] + 1
+                                                                               quantidade_grupos_power_ar_on - 1] + 1
             else:
                 # Senao, cria um novo grupo, um novo Eixo X
                 quantidade_grupos_power_ar_on = quantidade_grupos_power_ar_on + 1
@@ -2989,7 +3025,7 @@ class MyWin(QtWidgets.QMainWindow):
 
                 # Incremento o vetor dia_doGrupo com 1 posição a mais
                 dia_do_grupo_power_ar_on = np.resize(dia_do_grupo_power_ar_on,
-                                                      (1, len(dia_do_grupo_power_ar_on[0]) + 1))
+                                                     (1, len(dia_do_grupo_power_ar_on[0]) + 1))
                 # Atribuo o valor para a posição Criada
                 dia_do_grupo_power_ar_on[0][quantidade_grupos_power_ar_on - 1] = dia_atual
 
@@ -3002,7 +3038,7 @@ class MyWin(QtWidgets.QMainWindow):
                 # Atribui novos valores pros eixos X e Y
                 eixo_x_power_ar_on[0][quantidade_grupos_power_ar_on - 1] = data_horario_inicio
                 eixo_y_power_ar_on[0][quantidade_grupos_power_ar_on - 1] = eixo_y_power_ar_on[0][
-                                                                                 quantidade_grupos_power_ar_on - 1] + 1
+                                                                               quantidade_grupos_power_ar_on - 1] + 1
 
             # Apresenta os Vetores
             # Grupos Misturados separados pelos dias das semanas a cada 15min.
@@ -3028,7 +3064,7 @@ class MyWin(QtWidgets.QMainWindow):
                         else:
                             # Aumento o tamanho da minha matrix,e acrescenta os valores
                             eixo_x_agrupado_power_ar_on = np.resize(eixo_x_agrupado_power_ar_on,
-                                                                     (len(eixo_x_agrupado_power_ar_on) + 1, 3))
+                                                                    (len(eixo_x_agrupado_power_ar_on) + 1, 3))
                             eixo_x_agrupado_power_ar_on[n][0] = eixo_x_power_ar_on[0][x]
                             eixo_x_agrupado_power_ar_on[n][1] = eixo_y_power_ar_on[0][x]
                             eixo_x_agrupado_power_ar_on[n][2] = dia_do_grupo_power_ar_on[0][x]
@@ -3141,7 +3177,9 @@ class MyWin(QtWidgets.QMainWindow):
                 # LOOP PARA INSERIR TODOS AS LINHAS DA MATRIZ
                 for nn in range(0, len(tendencia_power_ar_on)):
                     # Executa o comando:
-                    cursor.execute("INSERT INTO tendencias (acao,horario,dia,valor) VALUES(%s,%s,%s,%s)", (tendencia_power_ar_on[nn][0], tendencia_power_ar_on[nn][1], tendencia_power_ar_on[nn][2],tendencia_power_ar_on[nn][3]))
+                    cursor.execute("INSERT INTO tendencias (acao,horario,dia,valor) VALUES(%s,%s,%s,%s)", (
+                    tendencia_power_ar_on[nn][0], tendencia_power_ar_on[nn][1], tendencia_power_ar_on[nn][2],
+                    tendencia_power_ar_on[nn][3]))
                 conexao.close()
                 print("Nova Tendência Registrada!")
 
@@ -3151,7 +3189,7 @@ class MyWin(QtWidgets.QMainWindow):
                 # DELETA VALORES DO BD PREVIAMENTE CONFIGURADOS
                 cursor.execute("DELETE FROM tendencias WHERE acao='Power-Ar-On'")
                 conexao.close()
-                #Cria o vetor com 1 posição
+                # Cria o vetor com 1 posição
                 vetor_x_power_ar_on_tendencia = np.zeros((1, 1), dtype='<U22')
                 vetor_y_power_ar_on_tendencia = np.zeros((1, 1))
                 vetor_z_power_ar_on_tendencia = np.zeros((1, 1), dtype='<U22')
@@ -3166,10 +3204,10 @@ class MyWin(QtWidgets.QMainWindow):
             print("Error while connecting to MySQL", e)
 
     def machine_learning_power_ar_off(self):
-        #Variaveis de Configuração
+        # Variaveis de Configuração
         qq = 0
         sair = 0
-        taxa_tendencia=0.5
+        taxa_tendencia = 0.5
         power_ar_off = 0
         n_power_ar_off = 0
         quantidade_grupos_power_ar_off = 0
@@ -3180,7 +3218,7 @@ class MyWin(QtWidgets.QMainWindow):
             cursor = conexao.cursor()
             # Executa o comando:
             cursor.execute("SELECT acao,valor,horario FROM historico_acoes ORDER BY TIME(horario) ASC")
-            #cursor.execute("SELECT acao,valor,horario FROM historico_acoes ORDER BY horario ASC")
+            # cursor.execute("SELECT acao,valor,horario FROM historico_acoes ORDER BY horario ASC")
 
             # Recupera o resultado:
             resultado = cursor.fetchall()
@@ -3190,15 +3228,15 @@ class MyWin(QtWidgets.QMainWindow):
                     mac_acao[qq][0] = linha[0]
                     mac_acao[qq][1] = linha[1]
                     mac_acao[qq][2] = linha[2]
-                    #Verifica a categoria da Função atual
+                    # Verifica a categoria da Função atual
                     if mac_acao[qq][0] == 'Power-Ar-Off':
                         power_ar_off = power_ar_off + 1
-                    #Contador de resultados
+                    # Contador de resultados
                     qq = qq + 1
-            #criação do vetorcom a quantidade de resultados
+            # criação do vetorcom a quantidade de resultados
             mac_power_ar_off = np.array([[0] * 3] * power_ar_off, dtype='<U22')
 
-            #Conta a quantidade de resultados, e atribui ao novo vetor
+            # Conta a quantidade de resultados, e atribui ao novo vetor
             for x in range(0, cursor.rowcount):
                 if mac_acao[x][0] == 'Power-Ar-Off':
                     mac_power_ar_off[n_power_ar_off] = mac_acao[x]
@@ -3211,21 +3249,21 @@ class MyWin(QtWidgets.QMainWindow):
             # Criação dos Eixos E Vetor do dia do grupo
             eixo_x_power_ar_off = np.zeros((1, 1), dtype='<U22')
             eixo_y_power_ar_off = np.zeros((1, 1))
-            dia_do_grupo_power_ar_off=np.zeros((1, 1),dtype='i4') #Torna o vetor, inteiro
+            dia_do_grupo_power_ar_off = np.zeros((1, 1), dtype='i4')  # Torna o vetor, inteiro
 
             # Criação da data inicial
             data_obj = datetime.strptime(mac_power_ar_off[0][2], '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
             horario = (data_obj).strftime('%H:%M:%S')  # Faço o Somatorio de TIMES e converto para STRING
             data_horario_inicio = datetime.strptime(horario, '%H:%M:%S')  # Converto novamente para OBJETO
             data_comparativa_1 = (data_horario_inicio + (timedelta(minutes=15)))  # Data inicial + 15min
-            dia_comparativo=(data_obj).weekday() #Dia da semana da data comparativa
-            dia_atual=dia_comparativo   #Dia da semana para comparação inicial
+            dia_comparativo = (data_obj).weekday()  # Dia da semana da data comparativa
+            dia_atual = dia_comparativo  # Dia da semana para comparação inicial
 
             # Contador do Loop
             nn = 0
             # Seto o primeiro valor do Eixo X e do Dia do Grupo 1
             eixo_x_power_ar_off[0][0] = data_comparativa_1
-            dia_do_grupo_power_ar_off[0][0]=dia_comparativo
+            dia_do_grupo_power_ar_off[0][0] = dia_comparativo
 
             # Loop Comparativo
             while sair == 0:
@@ -3237,7 +3275,8 @@ class MyWin(QtWidgets.QMainWindow):
                     eixo_x_power_ar_off[0][quantidade_grupos_power_ar_off] = data_comparativa_1
 
                     # Incremento o vetor dia_do_Grupo com 1 posição a mais
-                    dia_do_grupo_power_ar_off = np.resize(dia_do_grupo_power_ar_off, (1, len(dia_do_grupo_power_ar_off[0]) + 1))
+                    dia_do_grupo_power_ar_off = np.resize(dia_do_grupo_power_ar_off,
+                                                          (1, len(dia_do_grupo_power_ar_off[0]) + 1))
                     # Atribuo o valor para a posição Criada
                     dia_do_grupo_power_ar_off[0][quantidade_grupos_power_ar_off] = dia_comparativo
 
@@ -3250,16 +3289,19 @@ class MyWin(QtWidgets.QMainWindow):
                         eixo_y_power_ar_off[0][jj] = eixo_y_aux_power_ar_off[0][jj]
 
                 # Loop Comparativo entre datas
-                while data_horario_inicio <= data_comparativa_1 and nn < (n_power_ar_off - 1) and dia_atual==dia_comparativo:
-                #while data_horario_inicio <= data_comparativa_1 and nn < ( n_power_ar_off - 1):
+                while data_horario_inicio <= data_comparativa_1 and nn < (
+                        n_power_ar_off - 1) and dia_atual == dia_comparativo:
+                    # while data_horario_inicio <= data_comparativa_1 and nn < ( n_power_ar_off - 1):
                     # Se tiver dentro dos 15min, Incrementa o valor do eixo Y
-                    eixo_y_power_ar_off[0][quantidade_grupos_power_ar_off] = eixo_y_power_ar_off[0][quantidade_grupos_power_ar_off] + 1
+                    eixo_y_power_ar_off[0][quantidade_grupos_power_ar_off] = eixo_y_power_ar_off[0][
+                                                                                 quantidade_grupos_power_ar_off] + 1
                     nn = nn + 1
                     # Capto a nova Data, e deixo pronto pra nova passagem do loop
-                    data_obj = datetime.strptime(mac_power_ar_off[nn][2],'%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
+                    data_obj = datetime.strptime(mac_power_ar_off[nn][2],
+                                                 '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
                     horario = (data_obj).strftime('%H:%M:%S')  # Faço o Somatorio de TIMES e converto para STRING
                     data_horario_inicio = datetime.strptime(horario, '%H:%M:%S')  # Converto novamente para OBJETO
-                    #Data em dia da Semana
+                    # Data em dia da Semana
                     dia_atual = (data_obj).weekday()
 
                 # Quando sai do Loop, um novo grupo de datas é formado.
@@ -3268,16 +3310,17 @@ class MyWin(QtWidgets.QMainWindow):
                 # Se a contagem não for a ultima, atribuo um novo valor pra ultima data
                 if nn != n_power_ar_off - 1:
                     data_comparativa_1 = (data_horario_inicio + timedelta(minutes=15))
-                    dia_comparativo=(data_obj).weekday()
+                    dia_comparativo = (data_obj).weekday()
                 # Se a contagem for a ultima, ele atribui a saida do loop geral
                 if (nn == (n_power_ar_off - 1)):
                     sair = 1
 
             # Apos sair o loop, ele compara a ultima data (que não é comparada com o loop anterior)
             if data_horario_inicio <= data_comparativa_1 and dia_atual == dia_comparativo:
-            #if data_horario_inicio <= data_comparativa_1:
+                # if data_horario_inicio <= data_comparativa_1:
                 # Se for o mesmo intervalo de 15min, atribui o valor para o Eixo Y
-                eixo_y_power_ar_off[0][quantidade_grupos_power_ar_off - 1] = eixo_y_power_ar_off[0][quantidade_grupos_power_ar_off - 1] + 1
+                eixo_y_power_ar_off[0][quantidade_grupos_power_ar_off - 1] = eixo_y_power_ar_off[0][
+                                                                                 quantidade_grupos_power_ar_off - 1] + 1
             else:
                 # Senao, cria um novo grupo, um novo Eixo X
                 quantidade_grupos_power_ar_off = quantidade_grupos_power_ar_off + 1
@@ -3285,9 +3328,10 @@ class MyWin(QtWidgets.QMainWindow):
                 eixo_x_power_ar_off[0][quantidade_grupos_power_ar_off - 1] = data_comparativa_1
 
                 # Incremento o vetor dia_doGrupo com 1 posição a mais
-                dia_do_grupo_power_ar_off = np.resize(dia_do_grupo_power_ar_off, (1, len(dia_do_grupo_power_ar_off[0]) + 1))
+                dia_do_grupo_power_ar_off = np.resize(dia_do_grupo_power_ar_off,
+                                                      (1, len(dia_do_grupo_power_ar_off[0]) + 1))
                 # Atribuo o valor para a posição Criada
-                dia_do_grupo_power_ar_off[0][quantidade_grupos_power_ar_off-1] = dia_atual
+                dia_do_grupo_power_ar_off[0][quantidade_grupos_power_ar_off - 1] = dia_atual
 
                 # Cria um novo valor pro Eixo Y, e atribui os valores antigos pro novo Eixo Y
                 eixo_y_aux_power_ar_off = eixo_y_power_ar_off[:]
@@ -3297,7 +3341,8 @@ class MyWin(QtWidgets.QMainWindow):
 
                 # Atribui novos valores pros eixos X e Y
                 eixo_x_power_ar_off[0][quantidade_grupos_power_ar_off - 1] = data_horario_inicio
-                eixo_y_power_ar_off[0][quantidade_grupos_power_ar_off - 1] = eixo_y_power_ar_off[0][ quantidade_grupos_power_ar_off - 1] + 1
+                eixo_y_power_ar_off[0][quantidade_grupos_power_ar_off - 1] = eixo_y_power_ar_off[0][
+                                                                                 quantidade_grupos_power_ar_off - 1] + 1
 
             # Apresenta os Vetores
             # Grupos Misturados separados pelos dias das semanas a cada 15min.
@@ -3306,84 +3351,85 @@ class MyWin(QtWidgets.QMainWindow):
             # print(dia_do_grupo_power_ar_off)
 
             ################# Aqui ocorre o agrupamento dos dias IGUAIS a cada 15min ####################
-            #Criação do Vetor que ira receber os valores
-            eixo_x_agrupado_power_ar_off=np.zeros((1, 3), dtype='<U22')
-            n=0
-            #For que ira rodar por todos os valores baixados do BD
-            for kkk in range(0,7):
+            # Criação do Vetor que ira receber os valores
+            eixo_x_agrupado_power_ar_off = np.zeros((1, 3), dtype='<U22')
+            n = 0
+            # For que ira rodar por todos os valores baixados do BD
+            for kkk in range(0, 7):
                 for x in range(0, len(eixo_x_power_ar_off[0])):
-                    #Aqui verifica qual dia da semana é.
+                    # Aqui verifica qual dia da semana é.
                     if dia_do_grupo_power_ar_off[0][x] == kkk:
-                        #Se for a primeira rodada no For:
-                        if n==0:
-                            eixo_x_agrupado_power_ar_off[n][0]=eixo_x_power_ar_off[0][x]
-                            eixo_x_agrupado_power_ar_off[n][1]=eixo_y_power_ar_off[0][x]
-                            eixo_x_agrupado_power_ar_off[n][2]=dia_do_grupo_power_ar_off[0][x]
-                            n=1
-                        else:
-                            #Aumento o tamanho da minha matrix,e acrescenta os valores
-                            eixo_x_agrupado_power_ar_off = np.resize(eixo_x_agrupado_power_ar_off, (len(eixo_x_agrupado_power_ar_off) + 1, 3))
+                        # Se for a primeira rodada no For:
+                        if n == 0:
                             eixo_x_agrupado_power_ar_off[n][0] = eixo_x_power_ar_off[0][x]
                             eixo_x_agrupado_power_ar_off[n][1] = eixo_y_power_ar_off[0][x]
                             eixo_x_agrupado_power_ar_off[n][2] = dia_do_grupo_power_ar_off[0][x]
-                            n=n+1
-            #Criação dos vetores RESULTADO
+                            n = 1
+                        else:
+                            # Aumento o tamanho da minha matrix,e acrescenta os valores
+                            eixo_x_agrupado_power_ar_off = np.resize(eixo_x_agrupado_power_ar_off,
+                                                                     (len(eixo_x_agrupado_power_ar_off) + 1, 3))
+                            eixo_x_agrupado_power_ar_off[n][0] = eixo_x_power_ar_off[0][x]
+                            eixo_x_agrupado_power_ar_off[n][1] = eixo_y_power_ar_off[0][x]
+                            eixo_x_agrupado_power_ar_off[n][2] = dia_do_grupo_power_ar_off[0][x]
+                            n = n + 1
+            # Criação dos vetores RESULTADO
             vetor_x_power_ar_off = np.zeros((1, 1), dtype='<U22')
             vetor_y_power_ar_off = np.zeros((1, 1))
             vetor_z_power_ar_off = np.zeros((1, 1), dtype='<U22')
             n = 0
-            #For que roda no tamanho da matrix ordenada
-            for x in range(0,len(eixo_x_agrupado_power_ar_off)):
-                if n==0:
-                    vetor_x_power_ar_off[0][0]=eixo_x_agrupado_power_ar_off[0][0]
-                    vetor_y_power_ar_off[0][0]=eixo_x_agrupado_power_ar_off[0][1]
-                    vetor_z_power_ar_off[0][0]=eixo_x_agrupado_power_ar_off[0][2]
-                    n=1
+            # For que roda no tamanho da matrix ordenada
+            for x in range(0, len(eixo_x_agrupado_power_ar_off)):
+                if n == 0:
+                    vetor_x_power_ar_off[0][0] = eixo_x_agrupado_power_ar_off[0][0]
+                    vetor_y_power_ar_off[0][0] = eixo_x_agrupado_power_ar_off[0][1]
+                    vetor_z_power_ar_off[0][0] = eixo_x_agrupado_power_ar_off[0][2]
+                    n = 1
                 else:
-                    #Criacao das datas para comparativo e AGRUPAR os horarios dos mesmos 15min
-                    data_obj = datetime.strptime(vetor_x_power_ar_off[0][n-1],'%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
+                    # Criacao das datas para comparativo e AGRUPAR os horarios dos mesmos 15min
+                    data_obj = datetime.strptime(vetor_x_power_ar_off[0][n - 1],
+                                                 '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
                     horario = (data_obj).strftime('%H:%M:%S')  # Faço o Somatorio de TIMES e converto para STRING
                     data_horario_inicio = datetime.strptime(horario, '%H:%M:%S')  # Converto novamente para OBJETO
                     data_comparativa_1 = (data_horario_inicio - (timedelta(minutes=15)))  # Data inicial + 15min
-                    data_comparativa_2=data_horario_inicio
-                    dia_comparativo = vetor_z_power_ar_off[0][n-1]
+                    data_comparativa_2 = data_horario_inicio
+                    dia_comparativo = vetor_z_power_ar_off[0][n - 1]
 
-
-                    data_obj2 = datetime.strptime(eixo_x_agrupado_power_ar_off[x][0],'%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
+                    data_obj2 = datetime.strptime(eixo_x_agrupado_power_ar_off[x][0],
+                                                  '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
                     horario2 = (data_obj2).strftime('%H:%M:%S')  # Faço o Somatorio de TIMES e converto para STRING
                     minha_data_horario2 = datetime.strptime(horario2, '%H:%M:%S')  # Converto novamente para OBJETO
                     data_horario2 = (minha_data_horario2 - (timedelta(minutes=15)))
                     dia_atual = eixo_x_agrupado_power_ar_off[x][2]
 
                     ##Trava para caso o vetor acabe apenas com 1 contagem na ultima casa, neste caso, a datação dela deve ser diferente para comparação.
-                    if (x == (len(eixo_x_agrupado_power_ar_off)-1)) and (eixo_x_agrupado_power_ar_off[x][1]=='1.0'):
-                        data_horario2 = (minha_data_horario2 )
+                    if (x == (len(eixo_x_agrupado_power_ar_off) - 1)) and (eixo_x_agrupado_power_ar_off[x][1] == '1.0'):
+                        data_horario2 = (minha_data_horario2)
 
-
-                    #Se o horario atual estiver entre os 15min do horario do grupo e se for do mesmo dia, soma o valor de quantidades
-                    if data_horario2>data_comparativa_1 and data_horario2<data_comparativa_2 and dia_atual==dia_comparativo:
-                        vetor_y_power_ar_off[0][n-1]=vetor_y_power_ar_off[0][n-1]+float(eixo_x_agrupado_power_ar_off[x][1])
-                    #Se nao, aumento os vetores, e acrescento como um outro grupo
+                    # Se o horario atual estiver entre os 15min do horario do grupo e se for do mesmo dia, soma o valor de quantidades
+                    if data_horario2 > data_comparativa_1 and data_horario2 < data_comparativa_2 and dia_atual == dia_comparativo:
+                        vetor_y_power_ar_off[0][n - 1] = vetor_y_power_ar_off[0][n - 1] + float(
+                            eixo_x_agrupado_power_ar_off[x][1])
+                    # Se nao, aumento os vetores, e acrescento como um outro grupo
                     else:
                         # Incremento o vetor X com 1 posição a mais
-                        vetor_x_power_ar_off = np.resize(vetor_x_power_ar_off,(1,len(vetor_x_power_ar_off[0])+1))
-                        vetor_y_power_ar_off = np.resize(vetor_y_power_ar_off,(1, len(vetor_y_power_ar_off[0]) + 1))
-                        vetor_z_power_ar_off = np.resize(vetor_z_power_ar_off,(1, len(vetor_z_power_ar_off[0]) + 1))
-                        #Acrescento valores
+                        vetor_x_power_ar_off = np.resize(vetor_x_power_ar_off, (1, len(vetor_x_power_ar_off[0]) + 1))
+                        vetor_y_power_ar_off = np.resize(vetor_y_power_ar_off, (1, len(vetor_y_power_ar_off[0]) + 1))
+                        vetor_z_power_ar_off = np.resize(vetor_z_power_ar_off, (1, len(vetor_z_power_ar_off[0]) + 1))
+                        # Acrescento valores
                         vetor_x_power_ar_off[0][n] = eixo_x_agrupado_power_ar_off[x][0]
                         vetor_y_power_ar_off[0][n] = eixo_x_agrupado_power_ar_off[x][1]
-                        vetor_z_power_ar_off[0][n]=eixo_x_agrupado_power_ar_off[x][2]
-                        n=n+1
+                        vetor_z_power_ar_off[0][n] = eixo_x_agrupado_power_ar_off[x][2]
+                        n = n + 1
 
-            #Apresentação dos valores AGRUPADOS E ORDENADOS
+            # Apresentação dos valores AGRUPADOS E ORDENADOS
             # print(vetor_x_power_ar_off)
             # print(vetor_y_power_ar_off)
             # print(vetor_z_power_ar_off)
 
-
-            #Parametros de Configuração para Estatísticas
-            somatorio_power_ar_off=0
-            qtd_somatorio_power_ar_off=0
+            # Parametros de Configuração para Estatísticas
+            somatorio_power_ar_off = 0
+            qtd_somatorio_power_ar_off = 0
 
             # Capto o Valor da Taxa de Tendencia do BD
             # Executa o comando:
@@ -3397,51 +3443,53 @@ class MyWin(QtWidgets.QMainWindow):
                 print("Dados Insuficientes no Banco de Dados")
                 # Finaliza a conexão
 
-            #Loop para saber qual o total dos valores da ação
+            # Loop para saber qual o total dos valores da ação
             for n in range(0, len(eixo_x_power_ar_off[0])):
-                somatorio_power_ar_off=somatorio_power_ar_off+eixo_y_power_ar_off[0][n]
-            #Loop para saber quantos valores estão acima da Taxa de Tendencia
+                somatorio_power_ar_off = somatorio_power_ar_off + eixo_y_power_ar_off[0][n]
+            # Loop para saber quantos valores estão acima da Taxa de Tendencia
             for nn in range(0, len(vetor_x_power_ar_off[0])):
                 if (float(vetor_y_power_ar_off[0][nn]) / somatorio_power_ar_off) >= taxa_tendencia:
-                    qtd_somatorio_power_ar_off=qtd_somatorio_power_ar_off+1
+                    qtd_somatorio_power_ar_off = qtd_somatorio_power_ar_off + 1
 
-            #Proteção para nao criar o vetor e nao tentar inserir no BD se nao existir Tendencias.
-            if qtd_somatorio_power_ar_off>0:
-                k=0
-                #Criaçcao do Vetor
+            # Proteção para nao criar o vetor e nao tentar inserir no BD se nao existir Tendencias.
+            if qtd_somatorio_power_ar_off > 0:
+                k = 0
+                # Criaçcao do Vetor
                 tendencia_power_ar_off = np.zeros((qtd_somatorio_power_ar_off, 4), dtype='<U22')
                 vetor_x_power_ar_off_tendencia = np.zeros((1, qtd_somatorio_power_ar_off), dtype='<U22')
                 vetor_y_power_ar_off_tendencia = np.zeros((1, qtd_somatorio_power_ar_off))
                 vetor_z_power_ar_off_tendencia = np.zeros((1, qtd_somatorio_power_ar_off), dtype='<U22')
-                #Loop para procurar novamente valores acima da Taxa de Tendencia
+                # Loop para procurar novamente valores acima da Taxa de Tendencia
                 for nn in range(0, len(vetor_x_power_ar_off[0])):
-                    #Condicação que compara cada valor com a Taxa de Tendencia
+                    # Condicação que compara cada valor com a Taxa de Tendencia
                     if (float(vetor_y_power_ar_off[0][nn]) / somatorio_power_ar_off) >= taxa_tendencia:
-                        #Atribuições do Vetor
-                        tendencia_power_ar_off[k][0]="Power-Ar-Off"
-                        tendencia_power_ar_off[k][1]=vetor_x_power_ar_off[0][nn]
-                        tendencia_power_ar_off[k][2]=vetor_z_power_ar_off[0][nn]
-                        tendencia_power_ar_off[k][3]=vetor_y_power_ar_off[0][nn]
-                        #Atribui Vetor de Tendencia que vai para o gráfico
-                        vetor_x_power_ar_off_tendencia[0][k]=vetor_x_power_ar_off[0][nn]
+                        # Atribuições do Vetor
+                        tendencia_power_ar_off[k][0] = "Power-Ar-Off"
+                        tendencia_power_ar_off[k][1] = vetor_x_power_ar_off[0][nn]
+                        tendencia_power_ar_off[k][2] = vetor_z_power_ar_off[0][nn]
+                        tendencia_power_ar_off[k][3] = vetor_y_power_ar_off[0][nn]
+                        # Atribui Vetor de Tendencia que vai para o gráfico
+                        vetor_x_power_ar_off_tendencia[0][k] = vetor_x_power_ar_off[0][nn]
                         vetor_y_power_ar_off_tendencia[0][k] = vetor_y_power_ar_off[0][nn]
                         vetor_z_power_ar_off_tendencia[0][k] = vetor_z_power_ar_off[0][nn]
-                        k=k+1
+                        k = k + 1
 
                 ##########Inserção no BD#############
-                #DELETA VALORES DO BD PREVIAMENTE CONFIGURADOS
+                # DELETA VALORES DO BD PREVIAMENTE CONFIGURADOS
                 cursor.execute("DELETE FROM tendencias WHERE acao='Power-Ar-Off'")
-                #LOOP PARA INSERIR TODOS AS LINHAS DA MATRIZ
+                # LOOP PARA INSERIR TODOS AS LINHAS DA MATRIZ
                 for nn in range(0, len(tendencia_power_ar_off)):
                     # Executa o comando:
-                    cursor.execute("INSERT INTO tendencias (acao,horario,dia,valor) VALUES(%s,%s,%s,%s)",(tendencia_power_ar_off[nn][0], tendencia_power_ar_off[nn][1], tendencia_power_ar_off[nn][2], tendencia_power_ar_off[nn][3]))
+                    cursor.execute("INSERT INTO tendencias (acao,horario,dia,valor) VALUES(%s,%s,%s,%s)", (
+                    tendencia_power_ar_off[nn][0], tendencia_power_ar_off[nn][1], tendencia_power_ar_off[nn][2],
+                    tendencia_power_ar_off[nn][3]))
                 conexao.close()
                 print("Nova Tendência Registrada!")
 
-            #CASO NAO HAJA TENDENCIA
+            # CASO NAO HAJA TENDENCIA
             else:
                 print("Não há tendência")
-                #DELETA VALORES DO BD PREVIAMENTE CONFIGURADOS
+                # DELETA VALORES DO BD PREVIAMENTE CONFIGURADOS
                 cursor.execute("DELETE FROM tendencias WHERE acao='Power-Ar-Off'")
                 conexao.close()
                 # Cria o vetor com 1 posição
@@ -3452,7 +3500,9 @@ class MyWin(QtWidgets.QMainWindow):
                 vetor_y_power_ar_off_tendencia[0][0] = 0
                 vetor_z_power_ar_off_tendencia[0][0] = 0
 
-            self.update_graph_machine_learning(vetor_x_power_ar_off[0],vetor_y_power_ar_off[0],vetor_z_power_ar_off[0],vetor_x_power_ar_off_tendencia[0],vetor_y_power_ar_off_tendencia[0],vetor_z_power_ar_off_tendencia[0])
+            self.update_graph_machine_learning(vetor_x_power_ar_off[0], vetor_y_power_ar_off[0],
+                                               vetor_z_power_ar_off[0], vetor_x_power_ar_off_tendencia[0],
+                                               vetor_y_power_ar_off_tendencia[0], vetor_z_power_ar_off_tendencia[0])
         except pymysql.err.OperationalError as e:
             print("Error while connecting to MySQL", e)
 
@@ -3460,19 +3510,19 @@ class MyWin(QtWidgets.QMainWindow):
         data_atual = datetime.now()
         dia = data_atual.weekday()
 
-        if dia==0:
+        if dia == 0:
             self.ui.comboBox_Dia_2.setCurrentText("Segunda")
-        elif dia==1:
+        elif dia == 1:
             self.ui.comboBox_Dia_2.setCurrentText("Terça")
-        elif dia==2:
+        elif dia == 2:
             self.ui.comboBox_Dia_2.setCurrentText("Quarta")
-        elif dia==3:
+        elif dia == 3:
             self.ui.comboBox_Dia_2.setCurrentText("Quinta")
-        elif dia==4:
+        elif dia == 4:
             self.ui.comboBox_Dia_2.setCurrentText("Sexta")
-        elif dia==5:
+        elif dia == 5:
             self.ui.comboBox_Dia_2.setCurrentText("Sábado")
-        elif dia==6:
+        elif dia == 6:
             self.ui.comboBox_Dia_2.setCurrentText("Domingo")
 
         self.ui.comboBox_3.currentIndexChanged.connect(self.select_graph_update_mac)
@@ -3480,128 +3530,129 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.comboBox_2.currentIndexChanged.connect(self.select_graph_update_mac)
 
     def select_graph_update_mac(self):
-        select_modo=self.ui.comboBox_3.currentText()
-        if select_modo=="Ar Condicionado ON":
+        select_modo = self.ui.comboBox_3.currentText()
+        if select_modo == "Ar Condicionado ON":
             self.machine_learning_power_ar_on()
-        elif select_modo=="Ar Condicionado OFF":
+        elif select_modo == "Ar Condicionado OFF":
             self.machine_learning_power_ar_off()
-        elif select_modo=="Temperatura +":
+        elif select_modo == "Temperatura +":
             self.machine_learning_temperatura_ar_mais()
-        elif select_modo=="Temperatura -":
+        elif select_modo == "Temperatura -":
             self.machine_learning_temperatura_ar_menos()
 
-    def update_graph_machine_learning(self, eixo_x, eixo_y, eixo_z, eixo_x_tendencia, eixo_y_tendencia, eixo_z_tendencia):
-        #Variaveis de Configurações Iniciais
-        qtd_dias=0
-        qtd_dias_tendencia=0
-        n=0
-        m=0
-        #Pego o valor das caixas de Seleção
-        select_modo_exibicao=self.ui.comboBox_2.currentText()
+    def update_graph_machine_learning(self, eixo_x, eixo_y, eixo_z, eixo_x_tendencia, eixo_y_tendencia,
+                                      eixo_z_tendencia):
+        # Variaveis de Configurações Iniciais
+        qtd_dias = 0
+        qtd_dias_tendencia = 0
+        n = 0
+        m = 0
+        # Pego o valor das caixas de Seleção
+        select_modo_exibicao = self.ui.comboBox_2.currentText()
         select_dia = self.ui.comboBox_Dia_2.currentText()
 
-        #Criação dos vetores do tamanho da entrada na Função
+        # Criação dos vetores do tamanho da entrada na Função
         novo_eixo_x_aux = np.zeros((1, len(eixo_x)), dtype='<U22')
         novo_eixo_y_aux = np.zeros((1, len(eixo_x)))
         novo_eixo_z_aux = np.zeros((1, len(eixo_x)))
 
-        #Execução, caso selecionado modo GERAL
-        if select_modo_exibicao=="Geral":
-            n=1
-            #Criação de vetor auxiliar para mudança de data
+        # Execução, caso selecionado modo GERAL
+        if select_modo_exibicao == "Geral":
+            n = 1
+            # Criação de vetor auxiliar para mudança de data
             novo_eixo_x_aux_data = np.zeros((1, len(eixo_x)), dtype='<U22')
-            for x in range(0,len(eixo_x)):
-                #Mudança de Data
+            for x in range(0, len(eixo_x)):
+                # Mudança de Data
                 data_obj = datetime.strptime(eixo_x[x], '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
                 novo_eixo_x_aux_data[0][x] = (data_obj).strftime('%H:%M')
-                #Atribuições dos valores ao vetor
+                # Atribuições dos valores ao vetor
                 novo_eixo_y_aux[0][x] = eixo_y[x]
                 novo_eixo_z_aux[0][x] = eixo_z[x]
-            #Transformação da Matriz, para vetor do gráfico
+            # Transformação da Matriz, para vetor do gráfico
             novo_eixo_x = np.squeeze(np.asarray(novo_eixo_x_aux_data))
             novo_eixo_y = np.squeeze(np.asarray(novo_eixo_y_aux))
-            #Caso nao haja tendencia, Também executa para eixo Z
+            # Caso nao haja tendencia, Também executa para eixo Z
             if eixo_x_tendencia[0][0] == "0":
                 novo_eixo_z = np.squeeze(np.asarray(novo_eixo_z_aux))
-            #Caso Haja tendencia
+            # Caso Haja tendencia
             if eixo_x_tendencia[0][0] != "0":
-                #Criação dos vetores da Tendencia
+                # Criação dos vetores da Tendencia
                 novo_eixo_x_aux_tendencia = np.zeros((1, len(eixo_x_tendencia)), dtype='<U22')
                 novo_eixo_z_aux_tendencia = np.zeros((1, len(eixo_x_tendencia)))
-                for x in range(0,len(eixo_x_tendencia)):
-                    #Mudança de Data
+                for x in range(0, len(eixo_x_tendencia)):
+                    # Mudança de Data
                     data_obj = datetime.strptime(eixo_x_tendencia[x], '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
-                    novo_eixo_x_aux_tendencia[0][x]=(data_obj).strftime('%H:%M')
-                    #Atribuição dos valores de Z
-                    novo_eixo_z_aux_tendencia[0][x]=float(eixo_z_tendencia[x])
-                #Concatenção dos valores de Z do vetor e do Vetor Tendencia, para nomeação quando plotar o grafico
-                novo_eixo_z=np.concatenate((novo_eixo_z_aux,novo_eixo_z_aux_tendencia),axis=1)
-                #Conversão das Matrizes para Vetores
+                    novo_eixo_x_aux_tendencia[0][x] = (data_obj).strftime('%H:%M')
+                    # Atribuição dos valores de Z
+                    novo_eixo_z_aux_tendencia[0][x] = float(eixo_z_tendencia[x])
+                # Concatenção dos valores de Z do vetor e do Vetor Tendencia, para nomeação quando plotar o grafico
+                novo_eixo_z = np.concatenate((novo_eixo_z_aux, novo_eixo_z_aux_tendencia), axis=1)
+                # Conversão das Matrizes para Vetores
                 novo_eixo_x_tendencia = np.squeeze(np.asarray(novo_eixo_x_aux_tendencia))
                 novo_eixo_z_tendencia = np.squeeze(np.asarray(novo_eixo_z))
-                novo_eixo_y_tendencia=eixo_y_tendencia
-        #Caso Seleção seja Diária
+                novo_eixo_y_tendencia = eixo_y_tendencia
+        # Caso Seleção seja Diária
         else:
-            #Atribuição do dia da semana
-            if select_dia=="Segunda":
-                dia=0
-            elif select_dia=="Terça":
-                dia=1
-            elif select_dia=="Quarta":
-                dia=2
-            elif select_dia=="Quinta":
-                dia=3
-            elif select_dia=="Sexta":
-                dia=4
-            elif select_dia=="Sábado":
-                dia=5
-            elif select_dia=="Domingo":
-                dia=6
+            # Atribuição do dia da semana
+            if select_dia == "Segunda":
+                dia = 0
+            elif select_dia == "Terça":
+                dia = 1
+            elif select_dia == "Quarta":
+                dia = 2
+            elif select_dia == "Quinta":
+                dia = 3
+            elif select_dia == "Sexta":
+                dia = 4
+            elif select_dia == "Sábado":
+                dia = 5
+            elif select_dia == "Domingo":
+                dia = 6
 
             for x in range(0, len(eixo_z)):
-                #Somatorio da quantidade de resultados
-                if int(eixo_z[x])==dia:
-                    qtd_dias=qtd_dias+1
-            #Caso seja diferente de zero, cria os vetores dos respectivos tamanhos
-            if qtd_dias!=0:
+                # Somatorio da quantidade de resultados
+                if int(eixo_z[x]) == dia:
+                    qtd_dias = qtd_dias + 1
+            # Caso seja diferente de zero, cria os vetores dos respectivos tamanhos
+            if qtd_dias != 0:
                 novo_eixo_x_aux = np.zeros((1, qtd_dias), dtype='<U22')
                 novo_eixo_y_aux = np.zeros((1, qtd_dias))
                 novo_eixo_z_aux = np.zeros((1, qtd_dias))
             else:
-                #Se for zero, crio vetor com 1 posição para evitar erro
+                # Se for zero, crio vetor com 1 posição para evitar erro
                 novo_eixo_x_aux = np.zeros((1, 1), dtype='<U22')
                 novo_eixo_y_aux = np.zeros((1, 1))
                 novo_eixo_z_aux = np.zeros((1, 1))
 
             for x in range(0, len(eixo_z)):
-                #Verificação se há grafico no dia selecionado
-                if int(eixo_z[x])==dia:
-                    #Condiguração da Data e Atribuição dos vetores
+                # Verificação se há grafico no dia selecionado
+                if int(eixo_z[x]) == dia:
+                    # Condiguração da Data e Atribuição dos vetores
                     data_obj = datetime.strptime(eixo_x[x], '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
                     novo_eixo_x_aux[0][n] = (data_obj).strftime('%H:%M')
                     novo_eixo_y_aux[0][n] = eixo_y[x]
                     novo_eixo_z_aux[0][n] = eixo_z[x]
                     n = n + 1
-            #Se não houver Dados no dia, Atribuo valores Default para evitar erro
-            if n==0:
+            # Se não houver Dados no dia, Atribuo valores Default para evitar erro
+            if n == 0:
                 novo_eixo_x_aux[0][0] = "0"
                 novo_eixo_y_aux[0][0] = 0
                 novo_eixo_z_aux[0][0] = 0
                 novo_eixo_x = np.squeeze(np.asarray(novo_eixo_x_aux))
                 novo_eixo_y = np.squeeze(np.asarray(novo_eixo_y_aux))
                 novo_eixo_z = np.squeeze(np.asarray(novo_eixo_z_aux))
-            #Se houver 1 valor, atribuo o unico valor ao vetor
-            elif n==1:
+            # Se houver 1 valor, atribuo o unico valor ao vetor
+            elif n == 1:
                 novo_eixo_x = [novo_eixo_x_aux[0][0]]
                 novo_eixo_y = [novo_eixo_y_aux[0][0]]
                 novo_eixo_z = [novo_eixo_z_aux[0][0]]
-            #Caso haja varios valores, há a conversão da Matriz, para Vetor
+            # Caso haja varios valores, há a conversão da Matriz, para Vetor
             else:
                 novo_eixo_x = np.squeeze(np.asarray(novo_eixo_x_aux))
                 novo_eixo_y = np.squeeze(np.asarray(novo_eixo_y_aux))
                 novo_eixo_z = np.squeeze(np.asarray(novo_eixo_z_aux))
 
-##################Caso haja TENDENCIA, repete-se o mesmo procedimento
+            ##################Caso haja TENDENCIA, repete-se o mesmo procedimento
             if eixo_x_tendencia[0][0] != "0":
                 for x in range(0, len(eixo_z_tendencia)):
                     if int(eixo_z_tendencia[x]) == dia:
@@ -3618,7 +3669,8 @@ class MyWin(QtWidgets.QMainWindow):
 
                 for x in range(0, len(eixo_z_tendencia)):
                     if int(eixo_z_tendencia[x]) == dia:
-                        data_obj = datetime.strptime(eixo_x_tendencia[x], '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
+                        data_obj = datetime.strptime(eixo_x_tendencia[x],
+                                                     '%Y-%m-%d %H:%M:%S')  # Converto em Objeto Data
                         novo_eixo_x_aux_tendencia[0][m] = (data_obj).strftime('%H:%M')
                         novo_eixo_y_aux_tendencia[0][m] = eixo_y_tendencia[x]
                         novo_eixo_z_aux_tendencia[0][m] = eixo_z_tendencia[x]
@@ -3647,16 +3699,18 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.MplWidget_2.canvas.axes.plot(novo_eixo_x, novo_eixo_y, 'or', linewidth=8)
         # Barras Gerais
         self.ui.MplWidget_2.canvas.axes.bar(novo_eixo_x, novo_eixo_y)
-        #Verificação para Barras de Tendencia
-        if eixo_x_tendencia[0][0]!="0" and select_modo_exibicao != "Geral":
-            if novo_eixo_y_aux_tendencia[0][0]!=0.0:
+        # Verificação para Barras de Tendencia
+        if eixo_x_tendencia[0][0] != "0" and select_modo_exibicao != "Geral":
+            if novo_eixo_y_aux_tendencia[0][0] != 0.0:
                 self.ui.MplWidget_2.canvas.axes.bar(novo_eixo_x_tendencia, novo_eixo_y_tendencia, color='r')
         if eixo_x_tendencia[0][0] != "0" and select_modo_exibicao == "Geral":
             self.ui.MplWidget_2.canvas.axes.bar(novo_eixo_x_tendencia, novo_eixo_y_tendencia, color='r')
         # Apresenta os valores nos eixos
         for p in self.ui.MplWidget_2.canvas.axes.patches:
-            self.ui.MplWidget_2.canvas.axes.annotate(p.get_height(),(p.get_x() + p.get_width() / 2., p.get_height()),ha='center', va='center', fontsize=11, color='gray',xytext=(0, 20),textcoords='offset points')
-        #Apresenta NOMES DOS DIAS nas Barras
+            self.ui.MplWidget_2.canvas.axes.annotate(p.get_height(), (p.get_x() + p.get_width() / 2., p.get_height()),
+                                                     ha='center', va='center', fontsize=11, color='gray',
+                                                     xytext=(0, 20), textcoords='offset points')
+        # Apresenta NOMES DOS DIAS nas Barras
         if select_modo_exibicao == "Geral":
             l = 0
             if eixo_x_tendencia[0][0] != "0":
@@ -3675,33 +3729,37 @@ class MyWin(QtWidgets.QMainWindow):
                         dia = "Sáb"
                     elif novo_eixo_z_tendencia[l] == 6:
                         dia = "Dom"
-                    self.ui.MplWidget_2.canvas.axes.annotate(dia, (p.get_x() + p.get_width() / 2., p.get_height()),ha='center', va='center', fontsize=11, color='white',xytext=(0, -15), textcoords='offset points', rotation=90)
+                    self.ui.MplWidget_2.canvas.axes.annotate(dia, (p.get_x() + p.get_width() / 2., p.get_height()),
+                                                             ha='center', va='center', fontsize=11, color='white',
+                                                             xytext=(0, -15), textcoords='offset points', rotation=90)
                     l = l + 1
-            #Caso Seleção seja Diária
+            # Caso Seleção seja Diária
             else:
                 for p in (self.ui.MplWidget_2.canvas.axes.patches):
-                    if novo_eixo_z[l]==0:
-                        dia="Seg"
-                    elif novo_eixo_z[l]==1:
-                        dia="Ter"
-                    elif novo_eixo_z[l]==2:
-                        dia="Qua"
-                    elif novo_eixo_z[l]==3:
-                        dia="Qui"
-                    elif novo_eixo_z[l]==4:
-                        dia="Sex"
-                    elif novo_eixo_z[l]==5:
-                        dia="Sáb"
-                    elif novo_eixo_z[l]==6:
-                        dia="Dom"
-                    self.ui.MplWidget_2.canvas.axes.annotate(dia,(p.get_x() + p.get_width() / 2., p.get_height()),ha='center', va='center', fontsize=11, color='white',xytext=(0, -15),textcoords='offset points', rotation=90)
-                    l=l+1
+                    if novo_eixo_z[l] == 0:
+                        dia = "Seg"
+                    elif novo_eixo_z[l] == 1:
+                        dia = "Ter"
+                    elif novo_eixo_z[l] == 2:
+                        dia = "Qua"
+                    elif novo_eixo_z[l] == 3:
+                        dia = "Qui"
+                    elif novo_eixo_z[l] == 4:
+                        dia = "Sex"
+                    elif novo_eixo_z[l] == 5:
+                        dia = "Sáb"
+                    elif novo_eixo_z[l] == 6:
+                        dia = "Dom"
+                    self.ui.MplWidget_2.canvas.axes.annotate(dia, (p.get_x() + p.get_width() / 2., p.get_height()),
+                                                             ha='center', va='center', fontsize=11, color='white',
+                                                             xytext=(0, -15), textcoords='offset points', rotation=90)
+                    l = l + 1
         # Seta os limites do Eixo Y para os valores nas barras nao Ultrapassar o Grafico
-        if n!=0:
+        if n != 0:
             self.ui.MplWidget_2.canvas.axes.set_ylim(0, max((novo_eixo_y)) + 0.15 * max((novo_eixo_y)))
         self.ui.MplWidget_2.canvas.axes.legend(['Padrões do Usuário'], loc='upper right')
         self.ui.MplWidget_2.canvas.axes.set_xticks(novo_eixo_x)
-        #Configuração para Titulo do Gráfico Personalizado
+        # Configuração para Titulo do Gráfico Personalizado
         if select_modo_exibicao == "Geral":
             titulo = "Gráfico de Tendências - Geral"
             self.ui.MplWidget_2.canvas.axes.set_title(titulo)
@@ -3727,31 +3785,30 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.MplWidget_2.canvas.axes.grid()
         self.ui.MplWidget_2.canvas.draw()
 
-    def controle(self):
+    def agente_controle_tendencias(self):
         controle = self.check_controle()
         if controle == True:
             self.auto_tendencias()
 
-
-    #Funções dos Agentes
-    #Controle Lâmpada
+    # Funções dos Agentes
+    # Controle Lâmpada
     def lamp_control(self, input):
-        dados="p,{}".format(input)
+        dados = "p,{}".format(input)
         serial_port.write(dados.encode('utf-8'))
         serial_port.flush()
         data = serial_port.readline().decode('utf-8').replace('\r\n', '')
         print(data)
 
-        #serial_port.close()
+        # serial_port.close()
 
-    #Temperatura e Umidade
+    # Temperatura e Umidade
     def temp_umid(self):
         serial_port.write(b't')
         serial_port.flush()
         data1 = serial_port.readline().decode('utf-8').replace('\r\n', '')
         data2 = serial_port.readline().decode('utf-8').replace('\r\n', '')
         return (data1, data2)
-        #serial_port.close()
+        # serial_port.close()
 
     # Temperatura e Umidade
     def temp_agua(self):
@@ -3762,20 +3819,21 @@ class MyWin(QtWidgets.QMainWindow):
         # serial_port.close()
 
     def banho_control(self, input):
-        dados="v,{}".format(input)
+        dados = "v,{}".format(input)
         serial_port.write(dados.encode('utf-8'))
         serial_port.flush()
         data = serial_port.readline().decode('utf-8').replace('\r\n', '')
         print(data)
 
-        #serial_port.close()
-    #Intensidade Luminosa
+        # serial_port.close()
+
+    # Intensidade Luminosa
     def luximetro(self):
         serial_port.write(b'l')
         serial_port.flush()
         data = serial_port.readline().decode('utf-8').replace('\r\n', '').replace(',', '.')
         return (data)
-        #serial_port.close()
+        # serial_port.close()
 
     # Sensores de Movimento
     def pir1(self):
@@ -3783,95 +3841,104 @@ class MyWin(QtWidgets.QMainWindow):
         serial_port.flush()
         data = serial_port.readline().decode('utf-8').replace('\r\n', '').replace(',', '.')
         return (data)
-            # serial_port.close()
+        # serial_port.close()
+
     def pir2(self):
-        #Registrar esse comando no Arduino quando instalar o segundo sensor
+        # Registrar esse comando no Arduino quando instalar o segundo sensor
         serial_port.write(b'n')
         serial_port.flush()
         data = serial_port.readline().decode('utf-8').replace('\r\n', '').replace(',', '.')
         return (data)
-            # serial_port.close()
+        # serial_port.close()
 
-    #Controle TV
+    # Controle TV
     def power_off_tv(self):
-        serial_port.write(b's,2,99,3450,1700,450,400,450,1250,450,450,400,450,450,400,450,400,450,450,400,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,1300,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,1300,450,400,450,1300,400,1300,450,1300,400,1300,450,400,450,400,450,1300,450,400,450,1300,400,1300,450,1250,450,1300,450,400,450,1300,400')
+        serial_port.write(
+            b's,2,99,3450,1700,450,400,450,1250,450,450,400,450,450,400,450,400,450,450,400,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,1300,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,1300,450,400,450,1300,400,1300,450,1300,400,1300,450,400,450,400,450,1300,450,400,450,1300,400,1300,450,1250,450,1300,450,400,450,1300,400')
         serial_port.flush()
-        return("Comando Enviado para TV")
-        #serial_port.close()
+        return ("Comando Enviado para TV")
+        # serial_port.close()
 
     def canal_mais_tv(self):
-        serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
+        serial_port.write(
+            b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
         serial_port.flush()
-        return("Comando Enviado para TV")
-        #serial_port.close()
+        return ("Comando Enviado para TV")
+        # serial_port.close()
 
     def canal_menos_tv(self):
-        serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,1300,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,1250,450,450,450,400,450,400,450,450,400,450,400,450,450,400,450,400,450,1300,450,400,450,1250,450,450,400,1300,450,1300,400,450,450,400,450,1250,450,450,400,1300,450,400,450,1300,450,1250,450,400,450,1300,450')
+        serial_port.write(
+            b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,1300,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,1250,450,450,450,400,450,400,450,450,400,450,400,450,450,400,450,400,450,1300,450,400,450,1250,450,450,400,1300,450,1300,400,450,450,400,450,1250,450,450,400,1300,450,400,450,1300,450,1250,450,400,450,1300,450')
         serial_port.flush()
-        return("Comando Enviado para TV")
-        #serial_port.close()
+        return ("Comando Enviado para TV")
+        # serial_port.close()
 
     def vol_mais_tv(self):
-        serial_port.write(b's,2,99,3450,1700,450,400,500,1250,450,400,450,400,450,400,500,400,450,400,450,400,450,400,450,450,450,400,450,400,450,400,500,1250,450,400,450,400,450,400,500,400,400,450,450,400,450,400,500,350,500,400,450,1250,450,400,450,450,450,400,450,400,450,400,500,350,500,400,450,400,450,400,450,400,500,400,450,400,450,400,450,1250,500,400,450,400,450,400,450,400,500,400,450,400,450,400,450,1250,500,400,450,1250,450')
+        serial_port.write(
+            b's,2,99,3450,1700,450,400,500,1250,450,400,450,400,450,400,500,400,450,400,450,400,450,400,450,450,450,400,450,400,450,400,500,1250,450,400,450,400,450,400,500,400,400,450,450,400,450,400,500,350,500,400,450,1250,450,400,450,450,450,400,450,400,450,400,500,350,500,400,450,400,450,400,450,400,500,400,450,400,450,400,450,1250,500,400,450,400,450,400,450,400,500,400,450,400,450,400,450,1250,500,400,450,1250,450')
         serial_port.flush()
-        return("Comando Enviado para TV")
-        #serial_port.close()
+        return ("Comando Enviado para TV")
+        # serial_port.close()
 
     def vol_menos_tv(self):
-        serial_port.write(b's,2,99,3450,1700,450,400,500,1250,450,400,450,400,500,350,500,400,450,400,450,400,450,400,500,400,450,400,450,400,450,400,500,1250,450,400,450,400,450,400,500,400,450,400,450,400,450,400,500,350,500,400,450,1250,450,400,450,450,400,450,450,400,450,400,500,350,500,400,450,400,450,1250,500,400,450,400,450,400,450,400,450,1300,450,400,450,400,450,1300,450,400,450,400,450,400,450,400,500,1250,450,400,450,1300,450')
+        serial_port.write(
+            b's,2,99,3450,1700,450,400,500,1250,450,400,450,400,500,350,500,400,450,400,450,400,450,400,500,400,450,400,450,400,450,400,500,1250,450,400,450,400,450,400,500,400,450,400,450,400,450,400,500,350,500,400,450,1250,450,400,450,450,400,450,450,400,450,400,500,350,500,400,450,400,450,1250,500,400,450,400,450,400,450,400,450,1300,450,400,450,400,450,1300,450,400,450,400,450,400,450,400,500,1250,450,400,450,1300,450')
         serial_port.flush()
-        return("Comando Enviado para TV")
-        #serial_port.close()
+        return ("Comando Enviado para TV")
+        # serial_port.close()
 
-    #Controle AR
+    # Controle AR
     def power_off_ar(self):
-        #Mudar o Codigo do Comando
-        serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
+        # Mudar o Codigo do Comando
+        serial_port.write(
+            b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
         serial_port.flush()
-        return("Comando Enviado para o AR")
-        #serial_port.close()
+        return ("Comando Enviado para o AR")
+        # serial_port.close()
 
     def temp_mais_ar(self):
-        #Mudar o Codigo do Comando
-        serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
+        # Mudar o Codigo do Comando
+        serial_port.write(
+            b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
         serial_port.flush()
-        return("Comando Enviado para o AR")
-        #serial_port.close()
+        return ("Comando Enviado para o AR")
+        # serial_port.close()
 
     def temp_menos_ar(self):
-        #Mudar o Codigo do Comando
-        serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
+        # Mudar o Codigo do Comando
+        serial_port.write(
+            b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
         serial_port.flush()
-        return("Comando Enviado para o AR")
-        #serial_port.close()
+        return ("Comando Enviado para o AR")
+        # serial_port.close()
 
     def modo_ar(self):
-        #Mudar o Codigo do Comando
-        serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
+        # Mudar o Codigo do Comando
+        serial_port.write(
+            b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
         serial_port.flush()
-        return("Comando Enviado para o AR")
-        #serial_port.close()
+        return ("Comando Enviado para o AR")
+        # serial_port.close()
 
-
-    #Apresentação de Parâmetros na interface
+    # Apresentação de Parâmetros na interface
     def apresenta_parametros(self):
         global presenca
-        umidade,temperatura=self.temp_umid()
-        lux=self.luximetro()
+        umidade, temperatura = self.agente_recepcao("temp_amb")
+        lux = self.agente_recepcao("lux")
         self.ui.txt_temp_amb.setText(temperatura + "ºC")
         self.ui.txt_umid.setText(umidade + "%")
         self.ui.txt_lux.setText(lux)
 
-        if presenca==True:
+        if presenca == True:
             self.ui.txt_presenca.setText("Há alguém no cômodo!")
         else:
             self.ui.txt_presenca.setText("Não há presença no cômodo!")
         # tt = threading.Timer(1, self.apresenta_parametros)
         # tt.start()
 
-    #Automação e Controle
+    # Automação e Controle
     def check_aprendizagem(self):
-        #Checagem para chamar Machine Learning
+        # Checagem para chamar Machine Learning
         teste_conexao = 0
         try:
             conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
@@ -3886,7 +3953,7 @@ class MyWin(QtWidgets.QMainWindow):
                 for linha in resultado:
                     aprendizagem = linha[0]
 
-            if aprendizagem==True:
+            if aprendizagem == True:
                 self.ui.txt_modo_aprendizagem.setText("Modo Aprendizagem Habilitado")
             else:
                 self.ui.txt_modo_aprendizagem.setText("Modo Aprendizagem Desabilitado")
@@ -3911,7 +3978,7 @@ class MyWin(QtWidgets.QMainWindow):
                 teste_conexao = 1
 
     def check_controle(self):
-        #Checagem para chamar Machine Learning
+        # Checagem para chamar Machine Learning
         teste_conexao = 0
         try:
             conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
@@ -3926,7 +3993,7 @@ class MyWin(QtWidgets.QMainWindow):
                 for linha in resultado:
                     controle = linha[0]
 
-            if controle==True:
+            if controle == True:
                 self.ui.txt_modo_aprendizagem.setText("Modo Controle Habilitado")
             else:
                 self.ui.txt_modo_aprendizagem.setText("Modo Controle Desabilitado")
@@ -3950,7 +4017,7 @@ class MyWin(QtWidgets.QMainWindow):
                 teste_conexao = 1
 
     def check_economia(self):
-        #Checagem para chamar Machine Learning
+        # Checagem para chamar Machine Learning
         teste_conexao = 0
         try:
             conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
@@ -3965,7 +4032,7 @@ class MyWin(QtWidgets.QMainWindow):
                 for linha in resultado:
                     economia = linha[0]
 
-            if economia==True:
+            if economia == True:
                 self.ui.txt_modo_aprendizagem.setText("Modo Economia Habilitado")
             else:
                 self.ui.txt_modo_aprendizagem.setText("Modo Economia Desabilitado")
@@ -4001,27 +4068,27 @@ class MyWin(QtWidgets.QMainWindow):
 
             # Recupera o resultado:
             resultado = cursor.fetchall()
-            i=0
+            i = 0
             res = np.array([[0] * 5] * cursor.rowcount, dtype='<U22')
             if cursor.rowcount > 0:
                 for linha in resultado:
                     res[i][0] = linha[0]
-                    res[i][1]=linha[1]
-                    res[i][2]=linha[2]
-                    res[i][3]=linha[3]
-                    res[i][4]=linha[4]
+                    res[i][1] = linha[1]
+                    res[i][2] = linha[2]
+                    res[i][3] = linha[3]
+                    res[i][4] = linha[4]
 
-                    i+=1
+                    i += 1
 
             tendencias = np.array([[0] * 3] * cursor.rowcount, dtype='<U22')
 
-            for x in range(0,cursor.rowcount):
-                tendencias[x][0]=res[x][2]
-                tendencias[x][1]=res[x][1]
-                tendencias[x][2]=res[x][3]
+            for x in range(0, cursor.rowcount):
+                tendencias[x][0] = res[x][2]
+                tendencias[x][1] = res[x][1]
+                tendencias[x][2] = res[x][3]
 
-            #Chama a função Auto_tendencias para executar as tarefas
-            #self.auto_tendencias()
+            # Chama a função Auto_tendencias para executar as tarefas
+            # self.auto_tendencias()
 
         except pymysql.err.OperationalError as e:
             if teste_conexao == 0:
@@ -4040,102 +4107,102 @@ class MyWin(QtWidgets.QMainWindow):
                 teste_conexao = 1
 
     def check_pir1(self):
-        #Função para Presença IN
+        # Função para Presença IN
         global verify_pir1
         global presenca
         global time_last
         global time_last2
-        #Variavel de verificação se é o primeiro loop
-        loop1=False
-        #Pega o horário atual para verificar se passaram 5s do PIR2
-        real_time=datetime.now()
-        #Se houver presença e se tiver passado mais de 10s do horário PIR2
-        if presenca==False and real_time-time_last2>timedelta(seconds=10):
-            #Se não tiver terminado a ultima verificação, nao começa uma nova
-            if verify_pir1==False:
-                #Capta valor do sensor 1
-                pir1 = self.pir1()
-                #Se for captado
-                if pir1=="1":
-                    #Seta como inciado o processo
+        # Variavel de verificação se é o primeiro loop
+        loop1 = False
+        # Pega o horário atual para verificar se passaram 5s do PIR2
+        real_time = datetime.now()
+        # Se houver presença e se tiver passado mais de 10s do horário PIR2
+        if presenca == False and real_time - time_last2 > timedelta(seconds=10):
+            # Se não tiver terminado a ultima verificação, nao começa uma nova
+            if verify_pir1 == False:
+                # Capta valor do sensor 1
+                pir1 = self.agente_recepcao("pir1")
+                # Se for captado
+                if pir1 == "1":
+                    # Seta como inciado o processo
                     verify_pir1 = True
                     ##Trocar pelo comando do sensor
-                    #pir2=.self.pir2()
-                    pir2="1"
-                    #Se o sensor 2 estiver acionado
-                    if pir2=="1":
-                        #Há presença no comodo
-                        presenca=True
-                        #Se o loop ocorrer, seta o novo horario
-                        if loop1==False:
-                            time_last=datetime.now()
-                            loop1=True
-                #Finaliza o loop
-                verify_pir1=False
-                loop1=False
+                    # pir2=.self.agente_recepcao("pir2")
+                    pir2 = "1"
+                    # Se o sensor 2 estiver acionado
+                    if pir2 == "1":
+                        # Há presença no comodo
+                        presenca = True
+                        # Se o loop ocorrer, seta o novo horario
+                        if loop1 == False:
+                            time_last = datetime.now()
+                            loop1 = True
+                # Finaliza o loop
+                verify_pir1 = False
+                loop1 = False
 
     def check_pir2(self):
-        #Função para Presença OUT
-        #VERIFICAR CODIGO CORRIGIDO ACIMA
+        # Função para Presença OUT
+        # VERIFICAR CODIGO CORRIGIDO ACIMA
         global verify_pir2
         global presenca
         global time_last
         global time_last2
-        loop1=True
-        time_atual=datetime.now()
-        if presenca==True and time_atual-time_last>timedelta(seconds=10):
-            if verify_pir2==False:
+        loop1 = True
+        time_atual = datetime.now()
+        if presenca == True and time_atual - time_last > timedelta(seconds=10):
+            if verify_pir2 == False:
                 ##Trocar pelo comando do sensor
-                #pir2 = self.pir2()
-                pir2="1"
-                pir1=self.pir1()
-                #if pir2=="1":
-                if pir1=="1":
+                # pir2 = self.agente_recepcao("pir2")
+                pir2 = "1"
+                pir1 = self.agente_recepcao("pir1")
+                # if pir2=="1":
+                if pir1 == "1":
                     verify_pir2 = True
-                    pir1=self.pir1()
-                    if pir1=="1":
-                        presenca=False
-                        if loop1 ==True:
-                            time_last2=datetime.now()
-                            loop1=False
+                    pir1 = self.agente_recepcao("pir1")
+                    if pir1 == "1":
+                        presenca = False
+                        if loop1 == True:
+                            time_last2 = datetime.now()
+                            loop1 = False
 
-                verify_pir2=False
-                loop1=True
+                verify_pir2 = False
+                loop1 = True
 
     def auto_tendencias(self):
-        #Pegando a hora atual
-        data_atual=datetime.now()
+        # Pegando a hora atual
+        data_atual = datetime.now()
         horario_atual = (data_atual).strftime('%H:%M:%S')  # Faço o Somatorio de TIMES e converto para STRING
         data_atual = datetime.strptime(horario_atual, '%H:%M:%S')  # Converto novamente para OBJETO
 
-        print("Verificando atividades agendadas e a próxima verificação é em:{}".format((data_atual + (timedelta(minutes=5)))))
+        print("Verificando atividades agendadas e a próxima verificação é em:{}".format(
+            (data_atual + (timedelta(minutes=5)))))
 
-        #Pegando o numero do dia
-        dia_da_semana=datetime.now().weekday()
-        #For para conferir cada uma das tendencias e ver se está no horário de acionar
-        for x in range(0,len(tendencias)-1):
+        # Pegando o numero do dia
+        dia_da_semana = datetime.now().weekday()
+        # For para conferir cada uma das tendencias e ver se está no horário de acionar
+        for x in range(0, len(tendencias) - 1):
             data_obj = datetime.strptime(tendencias[x][0], '%Y-%m-%d %H:%M:%S')
             horario = (data_obj).strftime('%H:%M:%S')  # Faço o Somatorio de TIMES e converto para STRING
             data_obj = datetime.strptime(horario, '%H:%M:%S')  # Converto novamente para OBJETO
-            dia_tendencia=int(tendencias[x][2])
-            #Soma 5min à hora do sistema, para verificar se está no range
-            data_comparativa=(data_atual + (timedelta(minutes=5)))
-            #Se a tendencia é maior que a hora atual e menor ou igual a hora daqui 5min
+            dia_tendencia = int(tendencias[x][2])
+            # Soma 5min à hora do sistema, para verificar se está no range
+            data_comparativa = (data_atual + (timedelta(minutes=5)))
+            # Se a tendencia é maior que a hora atual e menor ou igual a hora daqui 5min
 
-
-            if data_atual<=data_obj<=data_comparativa and dia_da_semana==dia_tendencia:
-                #Atribui a ação
-                acao=tendencias[x][1]
-                #Verifica a ação e entra em cada uma das funções
+            if data_atual <= data_obj <= data_comparativa and dia_da_semana == dia_tendencia:
+                # Atribui a ação
+                acao = tendencias[x][1]
+                # Verifica a ação e entra em cada uma das funções
                 if acao == "Power-Ar-On":
-                    #Pega o valor do botao para conferir se ja esta ligado
+                    # Pega o valor do botao para conferir se ja esta ligado
                     valor = self.ui.btn_power_ar.text()
                     if valor == 'Ligar':
-                        #Executa a ação
+                        # Executa a ação
                         self.power_off_ar
-                        #Valor que vai para o UPDATE
+                        # Valor que vai para o UPDATE
                         valor = True
-                        #Atualiza o campo de texto
+                        # Atualiza o campo de texto
                         self.ui.btn_power_ar.setText("Desligar")
                         teste_conexao = 0
                         try:
@@ -4164,8 +4231,8 @@ class MyWin(QtWidgets.QMainWindow):
                     else:
                         # Caso o ar já esteja ligado
                         print("O Ar já se encontra Ligado!")
-##################EXECUTA O MESMO CODIGO ACIMA. VERIFICAR COMENTÁRIOS#########################
-                elif acao=="Power-Ar-Off":
+                ##################EXECUTA O MESMO CODIGO ACIMA. VERIFICAR COMENTÁRIOS#########################
+                elif acao == "Power-Ar-Off":
                     valor = self.ui.btn_power_ar.text()
                     if valor == 'Desligar':
                         self.power_off_ar()
@@ -4198,7 +4265,7 @@ class MyWin(QtWidgets.QMainWindow):
                     else:
                         print("O Ar já se encontra Desligado!")
 
-                elif acao=="Temperatura-Ar-Mais":
+                elif acao == "Temperatura-Ar-Mais":
                     valor = self.ui.btn_power_ar.text()
                     if valor == 'Desligar':
                         self.temp_mais_ar()
@@ -4231,7 +4298,7 @@ class MyWin(QtWidgets.QMainWindow):
                     else:
                         print("O Ar se encontra Desligado!")
 
-                elif acao=="Temperatura-Ar-Menos":
+                elif acao == "Temperatura-Ar-Menos":
                     valor = self.ui.btn_power_ar.text()
                     if valor == 'Desligar':
                         self.temp_menos_ar()
@@ -4268,11 +4335,11 @@ class MyWin(QtWidgets.QMainWindow):
         global verify_pid_lamp
         global target_lamp
         global verify_lamp_economic
-        #Verifica Check Controle e Economia
-        controle=self.check_controle()
-        economia=self.check_economia()
-        #Se os dois estiverem setados
-        if controle==True and economia==True:
+        # Verifica Check Controle e Economia
+        controle = self.check_controle()
+        economia = self.check_economia()
+        # Se os dois estiverem setados
+        if controle == True and economia == True:
             try:
                 conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
                 # Cria um cursor:
@@ -4285,23 +4352,23 @@ class MyWin(QtWidgets.QMainWindow):
                 if cursor.rowcount > 0:
                     for linha in resultado:
                         lux = linha[0]
-                    #Seto a intensidade luminosa
+                    # Seto a intensidade luminosa
                     target_lamp = lux
-                    #Seta Verify PID para cancelar a configuração inicial
+                    # Seta Verify PID para cancelar a configuração inicial
                     verify_pid_lamp = True
-                    #Envia o comando
-                    self.configuracao_pid("Iluminação", lux)
+                    # Envia o comando
+                    self.agente_configuracao_pid("Iluminação", lux)
 
             except pymysql.err.OperationalError as e:
                 print("Error while connecting to MySQL", e)
-        elif controle == True and economia == False and verify_lamp_economic==False:
+        elif controle == True and economia == False and verify_lamp_economic == False:
             verify_pid_lamp = True
             # Envia o comando
             self.lamp_control(100)
             self.update_estado_iluminacao_on()
-            verify_lamp_economic=True
+            verify_lamp_economic = True
 
-    def auto_banho(self,modo):
+    def auto_banho(self, modo):
         global target_banho_normal
         global target_banho_economic
         global config_pid_banho
@@ -4317,30 +4384,30 @@ class MyWin(QtWidgets.QMainWindow):
             if cursor.rowcount > 0:
                 for linha in resultado:
                     target_banho_normal = linha[0]
-                    target_banho_economic=linha[1]
+                    target_banho_economic = linha[1]
 
-                if modo=="configuração_banho":
-                    self.configuracao_pid("banho_normal", target_banho_normal)
-                    self.configuracao_pid("banho_economic", target_banho_economic)
+                if modo == "configuração_banho":
+                    self.agente_configuracao_pid("banho_normal", target_banho_normal)
+                    self.agente_configuracao_pid("banho_economic", target_banho_economic)
                     config_pid_banho = True
                     print("PID Banho Configurado")
-                elif modo=="banho_normal":
-                    self.configuracao_pid("banho_normal", target_banho_normal)
-                elif modo=="banho_economic":
-                    self.configuracao_pid("banho_economic", target_banho_economic)
+                elif modo == "banho_normal":
+                    self.agente_configuracao_pid("banho_normal", target_banho_normal)
+                elif modo == "banho_economic":
+                    self.agente_configuracao_pid("banho_economic", target_banho_economic)
 
         except pymysql.err.OperationalError as e:
             print("Error while connecting to MySQL", e)
 
     def auto_ar_economic(self):
-        economia=self.check_economia()
-        controle=self.check_controle()
-        state_ar=self.ui.btn_power_ar.text()
-        if state_ar=="Desligar":
-            state_ar=True
+        economia = self.check_economia()
+        controle = self.check_controle()
+        state_ar = self.ui.btn_power_ar.text()
+        if state_ar == "Desligar":
+            state_ar = True
         else:
-            state_ar=False
-        if economia==True and controle==True and datetime.now().hour==4 and state_ar==True:
+            state_ar = False
+        if economia == True and controle == True and datetime.now().hour == 4 and state_ar == True:
             self.power_off_ar()
             valor = False
             self.ui.btn_power_ar.setText("Ligar")
@@ -4371,39 +4438,39 @@ class MyWin(QtWidgets.QMainWindow):
         else:
             print("Não é possivel desligá-lo")
 
-    #Configuração PID
-    def configuracao_pid(self,modo,target):
+    # Configuração PID
+    def agente_configuracao_pid(self, modo, target):
         global config_pid_banho
         global config_pid_lamp
         global pid_lamp
         global pid_banho_economic
         global pid_banho_normal
         global verify_pid_lamp
-        #Setando variaveis PID
-        kp=1.4
-        ki=0.4
-        kd=0.0
-        #Se modo Iluminação
-        if modo=="Iluminação":
-            #Se não tiver configurado
+        # Setando variaveis PID
+        kp = 1.4
+        ki = 0.4
+        kd = 0.0
+        # Se modo Iluminação
+        if modo == "Iluminação":
+            # Se não tiver configurado
             if config_pid_lamp == False:
-                #Seta parametros
+                # Seta parametros
                 pid_lamp = PID.PID(kp, ki, kd)
                 pid_lamp.SetPoint = target
                 pid_lamp.setSampleTime(1)
                 config_pid_lamp = True
                 print("PID Lâmpada Configurado")
-            #Se já houver sido configurado, seta parâmetros e executa o Update
+            # Se já houver sido configurado, seta parâmetros e executa o Update
             pid_lamp.SetPoint = target
             pid_lamp.setKp(kp)
             pid_lamp.setKi(ki)
             pid_lamp.setKd(kd)
-            lux= self.luximetro()
+            lux = self.agente_recepcao("lux")
             pid_lamp.update(float(lux))
             targetPwm = pid_lamp.output
-        #Se for Controle da agua do Chuveiro
+        # Se for Controle da agua do Chuveiro
 
-        elif modo=="banho_normal":
+        elif modo == "banho_normal":
             if config_pid_banho == False:
                 pid_banho_normal = PID.PID(kp, ki, kd)
                 pid_banho_normal.SetPoint = target
@@ -4412,11 +4479,11 @@ class MyWin(QtWidgets.QMainWindow):
             pid_banho_normal.setKp(kp)
             pid_banho_normal.setKi(ki)
             pid_banho_normal.setKd(kd)
-            temp = self.temp_agua()
+            temp = self.agente_recepcao("temp_agua")
             pid_banho_normal.update(float(temp))
             targetPwm = pid_banho_normal.output
 
-        elif modo=="banho_economic":
+        elif modo == "banho_economic":
             if config_pid_banho == False:
                 pid_banho_economic = PID.PID(kp, ki, kd)
                 pid_banho_economic.SetPoint = target
@@ -4425,23 +4492,22 @@ class MyWin(QtWidgets.QMainWindow):
             pid_banho_economic.setKp(kp)
             pid_banho_economic.setKi(ki)
             pid_banho_economic.setKd(kd)
-            temp = self.temp_agua()
+            temp = self.agente_recepcao("temp_agua")
             pid_banho_economic.update(float(temp))
             targetPwm = pid_banho_economic.output
-
 
         targetPwm = max(min(int(targetPwm), 100), 0)
 
         if modo == "Iluminação":
-            #Seta o PWM para lâmpada
+            # Seta o PWM para lâmpada
             self.lamp_control(targetPwm)
-            #Capta se a Lâmpada estava desligada
-            state_lamp=self.ui.txt_state_lamp.text()
+            # Capta se a Lâmpada estava desligada
+            state_lamp = self.ui.txt_state_lamp.text()
             print("SET: %.1f LUX | ATUAL: %.1f LUX | PWM: %s %%" % (float(target), float(lux), float(targetPwm)))
-            #Se o PID já tiver sido configurado, e a lâmpada estava desligada, atualiza a Lâmpada
-            if verify_pid_lamp==True and state_lamp=="Desligada":
+            # Se o PID já tiver sido configurado, e a lâmpada estava desligada, atualiza a Lâmpada
+            if verify_pid_lamp == True and state_lamp == "Desligada":
                 self.update_estado_iluminacao_on()
-        elif modo=="banho_normal" or modo=="banho_economic":
+        elif modo == "banho_normal" or modo == "banho_economic":
             self.banho_control(targetPwm)
             print("SET: %.1f ºC| ATUAL: %.1f ºC | PWM: %s %%" % (float(target), float(temp), float(targetPwm)))
 
@@ -4453,11 +4519,10 @@ class MyWin(QtWidgets.QMainWindow):
         global verify_pid_lamp
         global presenca
 
-        if presenca==True:
+        if presenca == True:
             self.ui.txt_presenca.setText("Há alguém no cômodo!")
         else:
             self.ui.txt_presenca.setText("Não há presença no cômodo!")
-
 
         # Checa a presença ou não de presença
         self.check_pir1()
@@ -4469,19 +4534,19 @@ class MyWin(QtWidgets.QMainWindow):
             # Se houver Presença, Box Economia estiver setado Executa a automação
             if presenca == True and verify_pid_lamp == True:
                 self.auto_iluminacao()
-            if presenca==False and verify_pid_lamp == True:
-                #Esse IF garante que a lâmpada só vai executar o desligamento, se estiver ligada anteriormente
-                if self.ui.txt_state_lamp.text()=="Ligada":
+            if presenca == False and verify_pid_lamp == True:
+                # Esse IF garante que a lâmpada só vai executar o desligamento, se estiver ligada anteriormente
+                if self.ui.txt_state_lamp.text() == "Ligada":
                     self.update_estado_iluminacao_off()
 
         # Configuração inicial
         if verify_pid_lamp == False and controle == True:
-            self.configuracao_pid("Iluminação", target_lamp)
+            self.agente_configuracao_pid("Iluminação", target_lamp)
 
     def verify_pid_banho(self):
         global config_pid_banho
         global state_banho
-        economia=self.check_economia()
+        economia = self.check_economia()
         controle = self.check_controle()
 
         if controle == True:
@@ -4497,18 +4562,16 @@ class MyWin(QtWidgets.QMainWindow):
             self.banho_control(0)
             print("Chuveiro Desligado")
 
-
-
-    #Threads
+    # Threads
     def action_1_second(self):
         self.minha_data()
 
-
         clock_1_sec = threading.Timer(1, self.action_1_second)
         clock_1_sec.start()
+
     def action_5_seconds(self):
         global state_banho
-        if state_banho==False:
+        if state_banho == False:
             self.apresenta_parametros()
         else:
             self.verify_pid_banho()
@@ -4516,23 +4579,26 @@ class MyWin(QtWidgets.QMainWindow):
 
         clock_5_sec = threading.Timer(5, self.action_5_seconds)
         clock_5_sec.start()
+
     def action_15_seconds(self):
         global auto_update_graph
         self.consumo_mensal()
 
         # Variavel para correção do BUG janela de data errada
-        if auto_update_graph==False:
+        if auto_update_graph == False:
             selecao = self.ui.comboBox.currentText()
             if selecao == 'Diário':
-                #Atualiza Gráficos a cada 15s
+                # Atualiza Gráficos a cada 15s
                 self.update_graph()
 
         clock_15_sec = threading.Timer(15, self.action_15_seconds)
         clock_15_sec.start()
+
     def action_5_minutes(self):
-        self.controle()
+        self.agente_controle_tendencias()
         clock_5_min = threading.Timer(300, self.action_5_minutes)
         clock_5_min.start()
+
     def action_15_minutes(self):
         self.agrupamento_medicoes()
         try:
@@ -4541,6 +4607,7 @@ class MyWin(QtWidgets.QMainWindow):
         except:
             clock_15_min = threading.Timer(400, self.action_15_minutes)
             clock_15_min.start()
+
     def action_1_hour(self):
         self.machine_learning()
         self.seta_data_grafico()
@@ -4549,24 +4616,31 @@ class MyWin(QtWidgets.QMainWindow):
         # Recorrencia a cada 15min
         loop_mac = threading.Timer(3600, self.action_1_hour)
         loop_mac.start()
+
     def action_1_day(self):
         self.agrupamento_medicoes_diario()
-        #self.backup()
+        self.backup()
 
         vv = threading.Timer(3600, self.action_1_day)
         vv.start()
 
-    #Agentes
+    # Agentes
     def agente_recepcao(self, modo):
-        if modo=="temp_amb":
-            umidade,temperatura=self.temp_umid()
-            return temperatura,umidade
-        elif modo=="lux":
-            lux=self.luximetro()
+        if modo == "temp_amb":
+            temperatura, umidade = self.temp_umid()
+            return temperatura, umidade
+        elif modo == "lux":
+            lux = self.luximetro()
             return lux
-        elif modo=="temp_agua":
-            temp_agua=self.temp_agua()
+        elif modo == "temp_agua":
+            temp_agua = self.temp_agua()
             return temp_agua
+        elif modo == "pir1":
+            pir1 = self.pir1()
+            return pir1
+        elif modo == "pir2":
+            pir2 = self.pir2()
+            return pir2
 
     def agente_gerente(self):
         self.action_1_second()
@@ -4576,9 +4650,6 @@ class MyWin(QtWidgets.QMainWindow):
         self.action_1_hour()
         self.action_5_minutes()
         self.action_1_day()
-        #self.agrupamento_medicoes_mensal()
-
-#####Backup está fazendo sempre que inicia o programa
 
 
 if __name__ == "__main__":
