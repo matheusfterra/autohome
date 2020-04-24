@@ -1,6 +1,9 @@
 import threading
 from concurrent.futures import thread
 from idlelib import window
+
+from PyQt5.QtGui import QPixmap
+
 from info import Ui_InfoWindow
 import numpy
 import self as self
@@ -51,6 +54,9 @@ class MyWin(QtWidgets.QMainWindow):
         QtWidgets.QWidget.__init__(self, parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.setFixedSize(self.size())
+        # self.ui.label_25.setPixmap(QPixmap('images/logo.png'))
+        # self.ui.label_25.setGeometry(460, 500,250,250)
 
         # Apresenta Aba aberta
         print(self.get_tab())
