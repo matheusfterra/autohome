@@ -1370,10 +1370,12 @@ class MyWin(QtWidgets.QMainWindow):
     def update_banho(self):
         global state_banho
         state_banho= not state_banho
-        # if state_banho==True:
-        #     self.ui.btn_ligar_banho.setText("Desligar Chuveiro")
-        # else:
-        #     self.ui.btn_ligar_banho.setText("Ligar Chuveiro")
+        if state_banho==True:
+            self.ui.btn_ligar_banho.setText("Desligar Chuveiro")
+        else:
+            self.banho_control(0)
+            print("Chuveiro Desligado")
+            self.ui.btn_ligar_banho.setText("Ligar Chuveiro")
 
     def update_temp_banho_economic(self):
         valor = self.ui.txt_temp_agua_economic.toPlainText()
@@ -4482,20 +4484,19 @@ class MyWin(QtWidgets.QMainWindow):
         economia=self.check_economia()
         controle = self.check_controle()
 
-        if state_banho==True:
-            if controle == True:
-                # Configuração inicial
-                if config_pid_banho == False:
-                    self.auto_banho("configuração_banho")
-                if economia == True:
-                    self.auto_banho("banho_economic")
-                else:
-                    self.auto_banho("banho_normal")
+        if controle == True:
+            # Configuração inicial
+            if config_pid_banho == False:
+                self.auto_banho("configuração_banho")
+            if economia == True:
+                self.auto_banho("banho_economic")
             else:
-                state_banho=False
-                self.banho_control(0)
+                self.auto_banho("banho_normal")
         else:
+            state_banho = False
             self.banho_control(0)
+            print("Chuveiro Desligado")
+
 
 
     #Threads
