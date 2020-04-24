@@ -49,8 +49,8 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.setFixedSize(self.size())
-        # self.ui.label_25.setPixmap(QPixmap('images/logo.png'))
-        # self.ui.label_25.setGeometry(460, 500,250,250)
+        self.ui.figure2.setPixmap(QPixmap('images/figure2.png'))
+        self.ui.figure3.setPixmap(QPixmap('images/figure3.png'))
 
         # Apresenta Aba aberta
         print(self.get_tab())
@@ -1204,6 +1204,8 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.btn_on_ilum.setEnabled(False)
         self.ui.btn_off_ilum.setEnabled(True)
         self.ui.txt_state_lamp.setText("Ligada")
+        self.ui.figure1.setPixmap(QPixmap('images/figure1.png'))
+
 
         data_atual = datetime.now()
         data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
@@ -1257,6 +1259,8 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.btn_off_ilum.setEnabled(False)
         self.ui.btn_on_ilum.setEnabled(True)
         self.ui.txt_state_lamp.setText("Desligada")
+        self.ui.figure1.setPixmap(QPixmap('images/figure1_2.png'))
+
 
         data_atual = datetime.now()
         data_db = data_atual.strftime('%Y/%m/%d %H:%M:%S')
@@ -1947,10 +1951,14 @@ class MyWin(QtWidgets.QMainWindow):
             valor = True
             acao = "Power-Ar-On"
             self.ui.btn_power_ar.setText("Desligar")
+            self.ui.figure4.setPixmap(QPixmap('images/figure4.png'))
+
         elif valor == 'Desligar':
             valor = False
             acao = "Power-Ar-Off"
             self.ui.btn_power_ar.setText("Ligar")
+            self.ui.figure4.setPixmap(QPixmap('images/figure4_2.png'))
+
         teste_conexao = 0
 
         try:
@@ -1996,9 +2004,11 @@ class MyWin(QtWidgets.QMainWindow):
         if valor == 'Ligar':
             valor = True
             self.ui.btn_power_tv.setText("Desligar")
+            self.ui.figure5.setPixmap(QPixmap('images/figure5_2.png'))
         elif valor == 'Desligar':
             valor = False
             self.ui.btn_power_tv.setText("Ligar")
+            self.ui.figure5.setPixmap(QPixmap('images/figure5.png'))
         teste_conexao = 0
 
         try:
@@ -2226,10 +2236,13 @@ class MyWin(QtWidgets.QMainWindow):
                     self.ui.horizontalSlider.setEnabled(True)
                     self.ui.btn_on_ilum.setEnabled(False)
                     self.ui.txt_state_lamp.setText("Ligada")
+                    self.ui.figure1.setPixmap(QPixmap('images/figure1.png'))
+
                 else:
                     self.ui.horizontalSlider.setEnabled(False)
                     self.ui.btn_off_ilum.setEnabled(False)
                     self.ui.txt_state_lamp.setText("Desligada")
+                    self.ui.figure1.setPixmap(QPixmap('images/figure1_2.png'))
 
                 self.ui.txt_temp.setText(str(valor_temp))
                 self.ui.check_Aprendizagem.setCheckState(valor_aprendizagem)
@@ -2246,12 +2259,18 @@ class MyWin(QtWidgets.QMainWindow):
                     self.ui.btn_ligar_banho.setEnabled(False)
                 if valor_ar == True:
                     self.ui.btn_power_ar.setText("Desligar")
+                    self.ui.figure4.setPixmap(QPixmap('images/figure4.png'))
+
                 else:
                     self.ui.btn_power_ar.setText("Ligar")
+                    self.ui.figure4.setPixmap(QPixmap('images/figure4_2.png'))
+
                 if valor_televisao == True:
                     self.ui.btn_power_tv.setText("Desligar")
+                    self.ui.figure5.setPixmap(QPixmap('images/figure5_2.png'))
                 else:
                     self.ui.btn_power_tv.setText("Ligar")
+                    self.ui.figure5.setPixmap(QPixmap('images/figure5.png'))
                 if valor_modo_ar == True:
                     self.ui.text_modo_ar.setText("Turbo")
                 else:
@@ -3794,17 +3813,22 @@ class MyWin(QtWidgets.QMainWindow):
     # Controle Lâmpada
     def lamp_control(self, input):
         dados = "p,{}".format(input)
+        serial_port.flush()
         serial_port.write(dados.encode('utf-8'))
         serial_port.flush()
+        time.sleep(0.1)
         data = serial_port.readline().decode('utf-8').replace('\r\n', '')
+
         print(data)
 
         # serial_port.close()
 
     # Temperatura e Umidade
     def temp_umid(self):
-        serial_port.write(b't')
         serial_port.flush()
+        serial_port.write(b't')
+        #serial_port.flush()
+        time.sleep(0.1)
         data1 = serial_port.readline().decode('utf-8').replace('\r\n', '')
         data2 = serial_port.readline().decode('utf-8').replace('\r\n', '')
         return (data1, data2)
@@ -3812,16 +3836,21 @@ class MyWin(QtWidgets.QMainWindow):
 
     # Temperatura e Umidade
     def temp_agua(self):
-        serial_port.write(b'a')
+
         serial_port.flush()
+        serial_port.write(b'a')
+        #serial_port.flush()
+        time.sleep(0.1)
         data1 = serial_port.readline().decode('utf-8').replace('\r\n', '')
         return (data1)
         # serial_port.close()
 
     def banho_control(self, input):
         dados = "v,{}".format(input)
-        serial_port.write(dados.encode('utf-8'))
         serial_port.flush()
+        serial_port.write(dados.encode('utf-8'))
+        #serial_port.flush()
+        time.sleep(0.1)
         data = serial_port.readline().decode('utf-8').replace('\r\n', '')
         print(data)
 
@@ -3829,8 +3858,10 @@ class MyWin(QtWidgets.QMainWindow):
 
     # Intensidade Luminosa
     def luximetro(self):
-        serial_port.write(b'l')
         serial_port.flush()
+        serial_port.write(b'l')
+        #serial_port.flush()
+        time.sleep(0.1)
         data = serial_port.readline().decode('utf-8').replace('\r\n', '').replace(',', '.')
         return (data)
         # serial_port.close()
@@ -4579,6 +4610,7 @@ class MyWin(QtWidgets.QMainWindow):
 
         clock_5_sec = threading.Timer(5, self.action_5_seconds)
         clock_5_sec.start()
+
 
     def action_15_seconds(self):
         global auto_update_graph
