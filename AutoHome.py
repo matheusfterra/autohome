@@ -33,15 +33,18 @@ config_pid_lamp=False
 config_pid_banho=False
 verify_pid_lamp=False
 target_lamp=0
-target_banho=0
+target_banho_normal=0
+target_banho_economic=0
 pid_lamp=0
+pid_banho_normal=0
+pid_banho_economic=0
 verify_pir1=False
 verify_pir2=False
 presenca=False
 verify_lamp_economic=False
 time_last=datetime.now()
 time_last2=datetime.now()
-
+state_banho=False
 
 #Variável usada para conferência da mudança de hora para realização do backup
 hora_inicial=datetime.now()
@@ -102,6 +105,7 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.btn_temp.clicked.connect(self.update_temp)
         self.ui.btn_temp_agua_economic.clicked.connect(self.update_temp_banho_economic)
         self.ui.btn_temp_agua_normal.clicked.connect(self.update_temp_banho_normal)
+        self.ui.btn_ligar_banho.clicked.connect(self.update_banho)
         self.ui.btn_temp_mais.clicked.connect(self.update_temp_ar_mais)
         self.ui.btn_temp_menos.clicked.connect(self.update_temp_ar_menos)
         self.ui.btn_vol_mais.clicked.connect(self.update_volume_mais)
@@ -1363,6 +1367,14 @@ class MyWin(QtWidgets.QMainWindow):
                     msg.exec_()
                     teste_conexao = 1
 
+    def update_banho(self):
+        global state_banho
+        state_banho= not state_banho
+        # if state_banho==True:
+        #     self.ui.btn_ligar_banho.setText("Desligar Chuveiro")
+        # else:
+        #     self.ui.btn_ligar_banho.setText("Ligar Chuveiro")
+
     def update_temp_banho_economic(self):
         valor = self.ui.txt_temp_agua_economic.toPlainText()
         try:
@@ -2130,8 +2142,10 @@ class MyWin(QtWidgets.QMainWindow):
             print("Modo Controle Habilitado")
             self.check_tendencias()
             self.auto_tendencias()
+            self.ui.btn_ligar_banho.setEnabled(True)
         else:
             print("Modo Controle Desabilitado")
+            self.ui.btn_ligar_banho.setEnabled(False)
 
     def update_Tendencia(self):
         valor = self.ui.txt_tendencia.text()
@@ -2229,6 +2243,8 @@ class MyWin(QtWidgets.QMainWindow):
                 self.ui.txt_tendencia.setText(str(tendencia))
                 self.ui.txt_temp_agua_normal.setText(str(valor_temp_banho_normal))
 
+                if valor_controle==False:
+                    self.ui.btn_ligar_banho.setEnabled(False)
                 if valor_ar == True:
                     self.ui.btn_power_ar.setText("Desligar")
                 else:
@@ -3743,6 +3759,14 @@ class MyWin(QtWidgets.QMainWindow):
         return (data1)
         # serial_port.close()
 
+    def banho_control(self, input):
+        dados="v,{}".format(input)
+        serial_port.write(dados.encode('utf-8'))
+        serial_port.flush()
+        data = serial_port.readline().decode('utf-8').replace('\r\n', '')
+        print(data)
+
+        #serial_port.close()
     #Intensidade Luminosa
     def luximetro(self):
         serial_port.write(b'l')
@@ -3760,7 +3784,7 @@ class MyWin(QtWidgets.QMainWindow):
             # serial_port.close()
     def pir2(self):
         #Registrar esse comando no Arduino quando instalar o segundo sensor
-        serial_port.write(b'm2')
+        serial_port.write(b'n')
         serial_port.flush()
         data = serial_port.readline().decode('utf-8').replace('\r\n', '').replace(',', '.')
         return (data)
@@ -4275,6 +4299,37 @@ class MyWin(QtWidgets.QMainWindow):
             self.update_estado_iluminacao_on()
             verify_lamp_economic=True
 
+    def auto_banho(self,modo):
+        global target_banho_normal
+        global target_banho_economic
+        global config_pid_banho
+        try:
+            conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+            # Cria um cursor:
+            cursor = conexao.cursor()
+            # Executa o comando:
+            cursor.execute("SELECT temp_banho_economic, temp_banho_normal lux FROM configuracao_user  WHERE id=1")
+
+            # Recupera o resultado:
+            resultado = cursor.fetchall()
+            if cursor.rowcount > 0:
+                for linha in resultado:
+                    target_banho_normal = linha[0]
+                    target_banho_economic=linha[1]
+
+                if modo=="configuração_banho":
+                    self.configuracao_pid("banho_normal", target_banho_normal)
+                    self.configuracao_pid("banho_economic", target_banho_economic)
+                    config_pid_banho = True
+                    print("PID Banho Configurado")
+                elif modo=="banho_normal":
+                    self.configuracao_pid("banho_normal", target_banho_normal)
+                elif modo=="banho_economic":
+                    self.configuracao_pid("banho_economic", target_banho_economic)
+
+        except pymysql.err.OperationalError as e:
+            print("Error while connecting to MySQL", e)
+
     def auto_ar_economic(self):
         economia=self.check_economia()
         controle=self.check_controle()
@@ -4319,6 +4374,8 @@ class MyWin(QtWidgets.QMainWindow):
         global config_pid_banho
         global config_pid_lamp
         global pid_lamp
+        global pid_banho_economic
+        global pid_banho_normal
         global verify_pid_lamp
         #Setando variaveis PID
         kp=1.4
@@ -4333,7 +4390,7 @@ class MyWin(QtWidgets.QMainWindow):
                 pid_lamp.SetPoint = target
                 pid_lamp.setSampleTime(1)
                 config_pid_lamp = True
-                print("PID Configurado")
+                print("PID Lâmpada Configurado")
             #Se já houver sido configurado, seta parâmetros e executa o Update
             pid_lamp.SetPoint = target
             pid_lamp.setKp(kp)
@@ -4343,23 +4400,34 @@ class MyWin(QtWidgets.QMainWindow):
             pid_lamp.update(float(lux))
             targetPwm = pid_lamp.output
         #Se for Controle da agua do Chuveiro
-        else:
-            if config_pid_banho == False:
-                pid_banho = PID.PID(kp, ki, kd)
-                pid_banho.SetPoint = target
-                pid_banho.setSampleTime(1)
-                config_pid_banho = True
-                print("PID Configurado")
-            #Se já houver sido configurado
-            pid_banho.SetPoint = target
-            pid_banho.setKp(kp)
-            pid_banho.setKi(ki)
-            pid_banho.setKd(kd)
-            temp = self.temp_agua()
-            pid_banho.update(float(temp))
-            targetPwm = pid_banho.output
 
-        #Seta o valor PWM
+        elif modo=="banho_normal":
+            if config_pid_banho == False:
+                pid_banho_normal = PID.PID(kp, ki, kd)
+                pid_banho_normal.SetPoint = target
+                pid_banho_normal.setSampleTime(1)
+            pid_banho_normal.SetPoint = target
+            pid_banho_normal.setKp(kp)
+            pid_banho_normal.setKi(ki)
+            pid_banho_normal.setKd(kd)
+            temp = self.temp_agua()
+            pid_banho_normal.update(float(temp))
+            targetPwm = pid_banho_normal.output
+
+        elif modo=="banho_economic":
+            if config_pid_banho == False:
+                pid_banho_economic = PID.PID(kp, ki, kd)
+                pid_banho_economic.SetPoint = target
+                pid_banho_economic.setSampleTime(1)
+            pid_banho_economic.SetPoint = target
+            pid_banho_economic.setKp(kp)
+            pid_banho_economic.setKi(ki)
+            pid_banho_economic.setKd(kd)
+            temp = self.temp_agua()
+            pid_banho_economic.update(float(temp))
+            targetPwm = pid_banho_economic.output
+
+
         targetPwm = max(min(int(targetPwm), 100), 0)
 
         if modo == "Iluminação":
@@ -4371,8 +4439,9 @@ class MyWin(QtWidgets.QMainWindow):
             #Se o PID já tiver sido configurado, e a lâmpada estava desligada, atualiza a Lâmpada
             if verify_pid_lamp==True and state_lamp=="Desligada":
                 self.update_estado_iluminacao_on()
-        else:
-            print("SET: %.1f LUX | ATUAL: %.1f LUX | PWM: %s %%" % (float(target), float(temp), float(targetPwm)))
+        elif modo=="banho_normal" or modo=="banho_economic":
+            self.banho_control(targetPwm)
+            print("SET: %.1f ºC| ATUAL: %.1f ºC | PWM: %s %%" % (float(target), float(temp), float(targetPwm)))
 
         # Desabilita configuração inicial
         verify_pid_lamp = True
@@ -4407,6 +4476,28 @@ class MyWin(QtWidgets.QMainWindow):
         if verify_pid_lamp == False and controle == True:
             self.configuracao_pid("Iluminação", target_lamp)
 
+    def verify_pid_banho(self):
+        global config_pid_banho
+        global state_banho
+        economia=self.check_economia()
+        controle = self.check_controle()
+
+        if state_banho==True:
+            if controle == True:
+                # Configuração inicial
+                if config_pid_banho == False:
+                    self.auto_banho("configuração_banho")
+                if economia == True:
+                    self.auto_banho("banho_economic")
+                else:
+                    self.auto_banho("banho_normal")
+            else:
+                state_banho=False
+                self.banho_control(0)
+        else:
+            self.banho_control(0)
+
+
     #Threads
     def action_1_second(self):
         self.minha_data()
@@ -4415,7 +4506,11 @@ class MyWin(QtWidgets.QMainWindow):
         clock_1_sec = threading.Timer(1, self.action_1_second)
         clock_1_sec.start()
     def action_5_seconds(self):
-        self.apresenta_parametros()
+        global state_banho
+        if state_banho==False:
+            self.apresenta_parametros()
+        else:
+            self.verify_pid_banho()
         self.verify_pid_lamp()
 
         clock_5_sec = threading.Timer(5, self.action_5_seconds)
@@ -4448,6 +4543,7 @@ class MyWin(QtWidgets.QMainWindow):
     def action_1_hour(self):
         self.machine_learning()
         self.seta_data_grafico()
+        self.auto_ar_economic()
 
         # Recorrencia a cada 15min
         loop_mac = threading.Timer(3600, self.action_1_hour)
@@ -4479,11 +4575,8 @@ class MyWin(QtWidgets.QMainWindow):
         self.action_1_hour()
         self.action_5_minutes()
         self.action_1_day()
-        self.auto_ar_economic()
-
         #self.agrupamento_medicoes_mensal()
 
-        #return
 #####Backup está fazendo sempre que inicia o programa
 
 
