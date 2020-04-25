@@ -48,6 +48,10 @@ class MyWin(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         QtWidgets.QWidget.__init__(self, parent)
         self.ui = Ui_MainWindow()
+        self.ui.label = QLabel(self)
+        self.ui.label.setPixmap(QPixmap('images/background.png'))
+        self.ui.label.setGeometry(0, 0, 1280, 720)
+
         self.ui.setupUi(self)
         self.setFixedSize(self.size())
         self.ui.figure2.setPixmap(QPixmap('images/figure2.png'))
@@ -128,7 +132,7 @@ class MyWin(QtWidgets.QMainWindow):
         data_atual = datetime.now()
         data_em_texto = data_atual.strftime('%d/%m/%Y')
         horas_em_texto = data_atual.strftime('%Hh:%Mmin:%Ss')
-        saida = "Agora é " + horas_em_texto + " do dia: " + data_em_texto
+        saida = "Agora são " + horas_em_texto + " do dia: " + data_em_texto
         self.ui.data.setText(saida)
 
         # t = threading.Timer(1, self.minha_data)
