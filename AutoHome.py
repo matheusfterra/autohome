@@ -35,6 +35,7 @@ verify_lamp_economic = False
 time_last = datetime.now()
 time_last2 = datetime.now()
 state_banho = False
+aux=False
 
 # Variável usada para conferência da mudança de hora para realização do backup
 hora_inicial = datetime.now()
@@ -671,10 +672,12 @@ class MyWin(QtWidgets.QMainWindow):
         # Caso a Conexão dê errado:
         except pymysql.err.OperationalError as e:
             print("Error while connecting to MySQL", e)
-        # Escreve na ComboBox o Primeiro e Ultimo Ano
-        for x in range(ultimo_ano, primeiro_ano - 1, -1):
-            self.ui.comboBox_Ano.addItem(str(x))
-
+        if ultimo_ano!=primeiro_ano:
+            # Escreve na ComboBox o Primeiro e Ultimo Ano
+            for x in range(ultimo_ano, primeiro_ano - 1, -1):
+                self.ui.comboBox_Ano.addItem(str(x))
+        else:
+            self.ui.comboBox_Ano.addItem(str(ano))
         # Escreve nas ComboBoxs as datas Atuais
         self.ui.comboBox_Mes.setCurrentText(str(mes))
         self.ui.comboBox_Dia.setCurrentText(str(dia))
@@ -4497,7 +4500,12 @@ class MyWin(QtWidgets.QMainWindow):
             pid_lamp.setKi(ki)
             pid_lamp.setKd(kd)
             lux = self.agente_recepcao("lux")
-            pid_lamp.update(float(lux))
+            try:
+                pid_lamp.update(float(lux))
+            except:
+                lux=0
+                pid_lamp.update(lux)
+
             targetPwm = pid_lamp.output
         # Se for Controle da agua do Chuveiro
 
@@ -4641,10 +4649,12 @@ class MyWin(QtWidgets.QMainWindow):
             clock_15_min.start()
 
     def action_1_hour(self):
+        global aux
         self.machine_learning()
-        self.seta_data_grafico()
+        if aux==True:
+            self.seta_data_grafico()
         self.auto_ar_economic()
-
+        aux+=aux
         # Recorrencia a cada 15min
         loop_mac = threading.Timer(3600, self.action_1_hour)
         loop_mac.start()
