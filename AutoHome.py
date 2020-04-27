@@ -35,7 +35,13 @@ verify_lamp_economic = False
 time_last = datetime.now()
 time_last2 = datetime.now()
 state_banho = False
+state_ar=False
 aux=False
+current_process=False
+aux2=0
+aux3=0
+clock_5_sec = threading.Thread(args=())
+start_aux=False
 
 # Variável usada para conferência da mudança de hora para realização do backup
 hora_inicial = datetime.now()
@@ -102,14 +108,14 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.btn_temp_agua_economic.clicked.connect(self.update_temp_banho_economic)
         self.ui.btn_temp_agua_normal.clicked.connect(self.update_temp_banho_normal)
         self.ui.btn_ligar_banho.clicked.connect(self.update_banho)
-        self.ui.btn_temp_mais.clicked.connect(self.update_temp_ar_mais)
-        self.ui.btn_temp_menos.clicked.connect(self.update_temp_ar_menos)
+        self.ui.btn_temp_mais.clicked.connect(self.btn_temp_mais_ar)
+        self.ui.btn_temp_menos.clicked.connect(self.btn_temp_menos_ar)
         self.ui.btn_vol_mais.clicked.connect(self.update_volume_mais)
         self.ui.btn_vol_menos.clicked.connect(self.update_volume_menos)
         self.ui.btn_canal_mais.clicked.connect(self.update_canal_mais)
         self.ui.btn_canal_menos.clicked.connect(self.update_canal_menos)
-        self.ui.btn_modo_ar.clicked.connect(self.update_modo_ar)
-        self.ui.btn_power_ar.clicked.connect(self.update_power_ar)
+        self.ui.btn_modo_ar.clicked.connect(self.btn_modo_ar)
+        self.ui.btn_power_ar.clicked.connect(self.btn_power_ar)
         self.ui.btn_power_tv.clicked.connect(self.update_power_tv)
 
         # Funcao Backup/Restaurar
@@ -943,6 +949,7 @@ class MyWin(QtWidgets.QMainWindow):
             if cursor.rowcount > 0:
                 for linha in resultado:
                     date_backup = linha[0]
+
             # Se o mês atual for diferente do ultimo mes da condensação, significa que se passou 1 mês e é hora de executar novamente,
             if dia_atual != date_backup.day:
                 saida = backup()
@@ -951,7 +958,7 @@ class MyWin(QtWidgets.QMainWindow):
                 # Atualização da data atual para comparação
                 data_atual = datetime.now()
                 # Atualização da data atual no BD
-                cursor.execute("UPDATE configuracao_user SET date_agrupamento_medicoes=%s WHERE id=1", data_atual)
+                cursor.execute("UPDATE configuracao_user SET date_backup =%s WHERE id=1", data_atual)
 
                 conexao.close()
         except pymysql.err.OperationalError as e:
@@ -1197,6 +1204,34 @@ class MyWin(QtWidgets.QMainWindow):
         self.update_Controle()
         # Atualiza estado da Lâmpada
         self.update_estado_iluminacao_off()
+
+    def btn_power_ar(self):
+        # Atualiza estado do Check Controle
+        self.ui.check_Controle.setCheckState(False)
+        self.update_Controle()
+        # Atualiza estado da Lâmpada
+        self.update_power_ar()
+
+    def btn_temp_mais_ar(self):
+        # Atualiza estado do Check Controle
+        self.ui.check_Controle.setCheckState(False)
+        self.update_Controle()
+        # Atualiza estado da Lâmpada
+        self.update_temp_ar_mais()
+
+    def btn_temp_menos_ar(self):
+        # Atualiza estado do Check Controle
+        self.ui.check_Controle.setCheckState(False)
+        self.update_Controle()
+        # Atualiza estado da Lâmpada
+        self.update_temp_ar_menos()
+
+    def btn_modo_ar(self):
+        # Atualiza estado do Check Controle
+        self.ui.check_Controle.setCheckState(False)
+        self.update_Controle()
+        # Atualiza estado da Lâmpada
+        self.update_modo_ar()
 
     def update_estado_iluminacao_on(self):
 
@@ -1497,19 +1532,19 @@ class MyWin(QtWidgets.QMainWindow):
             msg.exec_()
 
     def update_temp_ar_mais(self):
-
         try:
             conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
             # Cria um cursor:
             cursor = conexao.cursor()
             # Executa o comando:
-            cursor.execute("SELECT ar_condicionado FROM configuracao_user  WHERE id=1")
+            cursor.execute("SELECT ar_condicionado,temp_ar FROM configuracao_user  WHERE id=1")
 
             # Recupera o resultado:
             resultado = cursor.fetchall()
             if cursor.rowcount > 0:
                 for linha in resultado:
                     ar_ligado = linha[0]
+                    temp_ar=linha[1]
             if ar_ligado == False:
                 msg = QMessageBox()
                 msg.setIcon(QMessageBox.Critical)
@@ -1521,8 +1556,19 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.exec_()
 
                 conexao.close()
+            elif temp_ar==25:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
+
+                msg.setText(".::Error::.")
+                msg.setInformativeText("O Ar Condicionado Está na temperatura máxima")
+                msg.setWindowTitle("Ar no máximo")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+
+                conexao.close()
             else:
-                self.temp_mais_ar()
+
 
                 valor = int(self.ui.text_temp_ar.text()) + 1
                 self.ui.text_temp_ar.setText(str(valor))
@@ -1543,6 +1589,8 @@ class MyWin(QtWidgets.QMainWindow):
                                    (acao, valor, data_db))
                 conexao.close()
 
+                self.temp_mais_ar()
+
             # Caso a Conexão dê errado:
         except pymysql.err.OperationalError as e:
             if teste_conexao == 0:
@@ -1561,19 +1609,19 @@ class MyWin(QtWidgets.QMainWindow):
                 teste_conexao = 1
 
     def update_temp_ar_menos(self):
-
         try:
             conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
             # Cria um cursor:
             cursor = conexao.cursor()
             # Executa o comando:
-            cursor.execute("SELECT ar_condicionado FROM configuracao_user  WHERE id=1")
+            cursor.execute("SELECT ar_condicionado,temp_ar FROM configuracao_user  WHERE id=1")
 
             # Recupera o resultado:
             resultado = cursor.fetchall()
             if cursor.rowcount > 0:
                 for linha in resultado:
                     ar_ligado = linha[0]
+                    temp_ar=linha[1]
             if ar_ligado == False:
                 msg = QMessageBox()
                 msg.setIcon(QMessageBox.Critical)
@@ -1581,6 +1629,17 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setText(".::Error::.")
                 msg.setInformativeText("O Ar Condicionado se Encontra Desligado")
                 msg.setWindowTitle("Ar Desligado")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+
+                conexao.close()
+            elif temp_ar==17:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
+
+                msg.setText(".::Error::.")
+                msg.setInformativeText("O Ar Condicionado Está na temperatura mínima")
+                msg.setWindowTitle("Ar no mínimo")
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
 
@@ -1609,7 +1668,7 @@ class MyWin(QtWidgets.QMainWindow):
                                    (acao, valor, data_db))
                 conexao.close()
 
-            # Caso a Conexão dê errado:
+        # Caso a Conexão dê errado:
         except pymysql.err.OperationalError as e:
             if teste_conexao == 0:
                 print("Error while connecting to MySQL", e)
@@ -1949,6 +2008,8 @@ class MyWin(QtWidgets.QMainWindow):
                 teste_conexao = 1
 
     def update_power_ar(self):
+        global state_ar
+        global aux2
         self.power_off_ar()
         valor = self.ui.btn_power_ar.text()
         data_atual = datetime.now()
@@ -1959,13 +2020,13 @@ class MyWin(QtWidgets.QMainWindow):
             acao = "Power-Ar-On"
             self.ui.btn_power_ar.setText("Desligar")
             self.ui.figure4.setPixmap(QPixmap('images/figure4.png'))
-
+            state_ar=True
         elif valor == 'Desligar':
             valor = False
             acao = "Power-Ar-Off"
             self.ui.btn_power_ar.setText("Ligar")
             self.ui.figure4.setPixmap(QPixmap('images/figure4_2.png'))
-
+            state_ar=False
         teste_conexao = 0
 
         try:
@@ -1983,6 +2044,10 @@ class MyWin(QtWidgets.QMainWindow):
                                (acao, valor, data_db))
             conexao.close()
 
+            if aux2==True:
+                self.action_5_seconds()
+            # print("Thread Interrompida e Reiniciada")
+            # clock_5_sec.start()
         # Caso a Conexão dê errado:
         except pymysql.err.OperationalError as e:
             if teste_conexao == 0:
@@ -2207,7 +2272,7 @@ class MyWin(QtWidgets.QMainWindow):
                 teste_conexao = 1
 
     def set_configs_user(self):
-
+        global state_ar
         try:
             conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
             # Cria um cursor:
@@ -2265,6 +2330,7 @@ class MyWin(QtWidgets.QMainWindow):
                 if valor_controle == False:
                     self.ui.btn_ligar_banho.setEnabled(False)
                 if valor_ar == True:
+                    state_ar=True
                     self.ui.btn_power_ar.setText("Desligar")
                     self.ui.figure4.setPixmap(QPixmap('images/figure4.png'))
 
@@ -3891,78 +3957,90 @@ class MyWin(QtWidgets.QMainWindow):
 
     # Controle TV
     def power_off_tv(self):
-        serial_port.write(
-            b's,2,99,3450,1700,450,400,450,1250,450,450,400,450,450,400,450,400,450,450,400,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,1300,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,1300,450,400,450,1300,400,1300,450,1300,400,1300,450,400,450,400,450,1300,450,400,450,1300,400,1300,450,1250,450,1300,450,400,450,1300,400')
+        serial_port.write(b's,1')
         serial_port.flush()
         return ("Comando Enviado para TV")
         # serial_port.close()
 
     def canal_mais_tv(self):
-        serial_port.write(
-            b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
+        serial_port.write(b's,2')
         serial_port.flush()
         return ("Comando Enviado para TV")
         # serial_port.close()
 
     def canal_menos_tv(self):
-        serial_port.write(
-            b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,1300,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,1250,450,450,450,400,450,400,450,450,400,450,400,450,450,400,450,400,450,1300,450,400,450,1250,450,450,400,1300,450,1300,400,450,450,400,450,1250,450,450,400,1300,450,400,450,1300,450,1250,450,400,450,1300,450')
+        serial_port.write(b's,3')
         serial_port.flush()
         return ("Comando Enviado para TV")
         # serial_port.close()
 
     def vol_mais_tv(self):
-        serial_port.write(
-            b's,2,99,3450,1700,450,400,500,1250,450,400,450,400,450,400,500,400,450,400,450,400,450,400,450,450,450,400,450,400,450,400,500,1250,450,400,450,400,450,400,500,400,400,450,450,400,450,400,500,350,500,400,450,1250,450,400,450,450,450,400,450,400,450,400,500,350,500,400,450,400,450,400,450,400,500,400,450,400,450,400,450,1250,500,400,450,400,450,400,450,400,500,400,450,400,450,400,450,1250,500,400,450,1250,450')
+        serial_port.write(b's,4')
         serial_port.flush()
         return ("Comando Enviado para TV")
         # serial_port.close()
 
     def vol_menos_tv(self):
-        serial_port.write(
-            b's,2,99,3450,1700,450,400,500,1250,450,400,450,400,500,350,500,400,450,400,450,400,450,400,500,400,450,400,450,400,450,400,500,1250,450,400,450,400,450,400,500,400,450,400,450,400,450,400,500,350,500,400,450,1250,450,400,450,450,400,450,450,400,450,400,500,350,500,400,450,400,450,1250,500,400,450,400,450,400,450,400,450,1300,450,400,450,400,450,1300,450,400,450,400,450,400,450,400,500,1250,450,400,450,1300,450')
+        serial_port.write(b's,5')
         serial_port.flush()
         return ("Comando Enviado para TV")
         # serial_port.close()
 
     # Controle AR
     def power_off_ar(self):
-        # Mudar o Codigo do Comando
-        serial_port.write(
-            b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
+        #serial_port.flush()
+        dados="s,6"
         serial_port.flush()
-        return ("Comando Enviado para o AR")
+        serial_port.write(dados.encode('utf-8'))
+
+        #serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
+        serial_port.flush()
+        time.sleep(0.1)
+        print("Comando Enviado para o AR")
         # serial_port.close()
 
     def temp_mais_ar(self):
         # Mudar o Codigo do Comando
-        serial_port.write(
-            b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
+        #serial_port.flush()
+
+        dados = "s,7"
         serial_port.flush()
-        return ("Comando Enviado para o AR")
+        serial_port.write(dados.encode('utf-8'))
+
+        #serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
+        serial_port.flush()
+        time.sleep(0.1)
+        print("Comando Enviado para o AR")
         # serial_port.close()
 
     def temp_menos_ar(self):
         # Mudar o Codigo do Comando
-        serial_port.write(
-            b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
+        #serial_port.flush()
+        dados = "s,8"
         serial_port.flush()
-        return ("Comando Enviado para o AR")
+        serial_port.write(dados.encode('utf-8'))
+
+        #serial_port.write(b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
+        serial_port.flush()
+        time.sleep(0.1)
+        print("Comando Enviado para o AR")
         # serial_port.close()
 
     def modo_ar(self):
         # Mudar o Codigo do Comando
-        serial_port.write(
-            b's,2,99,3450,1650,450,450,450,1250,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,1300,450,400,450,450,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,1300,400,450,450,400,450,400,450,400,450,450,400,450,450,400,450,400,450,450,400,450,450,1250,450,400,450,1300,450,1250,450,450,400,450,450,400,450,400,450,1300,400,450,450,1250,450,1300,450,400,450,1250,450')
         serial_port.flush()
-        return ("Comando Enviado para o AR")
+        serial_port.write(b's,9')
+        time.sleep(0.1)
+        print("Comando Enviado para o AR")
         # serial_port.close()
 
     # Apresentação de Parâmetros na interface
     def apresenta_parametros(self):
         global presenca
-        umidade, temperatura = self.agente_recepcao("temp_amb")
-        lux = self.agente_recepcao("lux")
+        # umidade, temperatura = self.agente_recepcao("temp_amb")
+        # lux = self.agente_recepcao("lux")
+        umidade, temperatura=self.temp_umid()
+        lux=self.luximetro()
         self.ui.txt_temp_amb.setText(temperatura + "ºC")
         self.ui.txt_umid.setText(umidade + "%")
         self.ui.txt_lux.setText(lux)
@@ -3973,7 +4051,6 @@ class MyWin(QtWidgets.QMainWindow):
             self.ui.txt_presenca.setText("Não há presença no cômodo!")
         # tt = threading.Timer(1, self.apresenta_parametros)
         # tt.start()
-
     # Automação e Controle
     def check_aprendizagem(self):
         # Checagem para chamar Machine Learning
@@ -4437,7 +4514,7 @@ class MyWin(QtWidgets.QMainWindow):
         except pymysql.err.OperationalError as e:
             print("Error while connecting to MySQL", e)
 
-    def auto_ar_economic(self):
+    def auto_ar_economic_off(self):
         economia = self.check_economia()
         controle = self.check_controle()
         state_ar = self.ui.btn_power_ar.text()
@@ -4475,6 +4552,55 @@ class MyWin(QtWidgets.QMainWindow):
             print("O Ar Condicionado foi desligado pelo modo Economia de Energia")
         else:
             print("Não é possivel desligá-lo")
+
+    def agente_ar_automatic(self):
+        global state_ar
+        controle=self.check_controle()
+        economia=self.check_economia()
+        umid,temp_amb=self.agente_recepcao("temp_amb")
+        temp_amb=float(temp_amb)
+        temp_ar=int(self.ui.text_temp_ar.text())
+        modo_ar=self.ui.text_modo_ar.text()
+        if state_ar==True and controle==True:
+            try:
+                conexao = pymysql.connect(db='automacao_residencial', user='root', passwd='1')
+                # Cria um cursor:
+                cursor = conexao.cursor()
+                # Executa o comando:
+                cursor.execute("SELECT temperatura FROM configuracao_user  WHERE id=1")
+
+                # Recupera o resultado:
+                resultado = cursor.fetchall()
+                if cursor.rowcount > 0:
+                    for linha in resultado:
+                        temp_amb_set = linha[0]
+
+                    if temp_amb>temp_amb_set and temp_ar>17:
+                        if economia==True and modo_ar=="Turbo":
+                            self.update_modo_ar()
+                            print("Modo do ar condicionado = Normal")
+                        if economia==False and modo_ar=="Normal":
+                            self.update_modo_ar()
+                            print("Modo do ar condicionado = Turbo")
+                        self.update_temp_ar_menos()
+                        print("Ar condicionado precisa diminuir")
+                    elif temp_amb<temp_amb_set and temp_ar<25:
+                        if economia==True and modo_ar=="Turbo":
+                            self.update_modo_ar()
+                            print("Modo do ar condicionado = Normal")
+                        if economia==False and modo_ar=="Normal":
+                            self.update_modo_ar()
+                            print("Modo do ar condicionado = Turbo")
+                        self.update_temp_ar_mais()
+                        print("Ar condicionado precisa aumentar")
+                    else:
+                        if modo_ar=="Turbo":
+                            self.update_modo_ar()
+                            print("Modo do ar condicionado = Normal")
+                        print("A temperatura está ideal")
+
+            except pymysql.err.OperationalError as e:
+                print("Error while connecting to MySQL", e)
 
     # Configuração PID
     def agente_configuracao_pid(self, modo, target):
@@ -4561,12 +4687,10 @@ class MyWin(QtWidgets.QMainWindow):
         global target_lamp
         global verify_pid_lamp
         global presenca
-
         if presenca == True:
             self.ui.txt_presenca.setText("Há alguém no cômodo!")
         else:
             self.ui.txt_presenca.setText("Não há presença no cômodo!")
-
         # Checa a presença ou não de presença
         self.check_pir1()
         self.check_pir2()
@@ -4614,6 +4738,7 @@ class MyWin(QtWidgets.QMainWindow):
 
     def action_5_seconds(self):
         global state_banho
+
         if state_banho == False:
             self.apresenta_parametros()
         else:
@@ -4623,9 +4748,9 @@ class MyWin(QtWidgets.QMainWindow):
         clock_5_sec = threading.Timer(5, self.action_5_seconds)
         clock_5_sec.start()
 
-
     def action_15_seconds(self):
         global auto_update_graph
+
         self.consumo_mensal()
 
         # Variavel para correção do BUG janela de data errada
@@ -4635,8 +4760,27 @@ class MyWin(QtWidgets.QMainWindow):
                 # Atualiza Gráficos a cada 15s
                 self.update_graph()
 
+
         clock_15_sec = threading.Timer(15, self.action_15_seconds)
         clock_15_sec.start()
+
+        # if aux2 == aux3 and aux == True:
+        #     print(clock_5_sec.is_alive())
+        #     print("Threading 5s foi interrompida....")
+        #     aux2=aux2+1
+        #     print("Passando 1")
+        #     #serial_port.sendBreak(duration = 0.02)
+        #     print("Passando 2")
+        #     print("Passando 3")
+        #     #serial_port.reset_input_buffer()
+        #     print("Passando 4")
+        #     #serial_port.reset_output_buffer()
+        #     # clock_5_sec = threading.Timer(1, self.action_5_seconds)
+        #     # clock_5_sec.start()
+        #     print("Passando 5")
+        #     self.action_5_seconds()
+        # else:
+        #     aux3 = aux2
 
     def action_5_minutes(self):
         self.agente_controle_tendencias()
@@ -4645,6 +4789,7 @@ class MyWin(QtWidgets.QMainWindow):
 
     def action_15_minutes(self):
         self.agrupamento_medicoes()
+        self.agente_ar_automatic()
         try:
             clock_15_min = threading.Timer(400, self.action_15_minutes)
             clock_15_min.start()
@@ -4657,8 +4802,8 @@ class MyWin(QtWidgets.QMainWindow):
         self.machine_learning()
         if aux==True:
             self.seta_data_grafico()
-        self.auto_ar_economic()
-        aux+=aux
+        self.auto_ar_economic_off()
+        aux=True
         # Recorrencia a cada 15min
         loop_mac = threading.Timer(3600, self.action_1_hour)
         loop_mac.start()
@@ -4696,6 +4841,7 @@ class MyWin(QtWidgets.QMainWindow):
         self.action_1_hour()
         self.action_5_minutes()
         self.action_1_day()
+
 
 
 if __name__ == "__main__":
