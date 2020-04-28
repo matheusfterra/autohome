@@ -38,10 +38,9 @@ state_banho = False
 state_ar=False
 aux=False
 current_process=False
+start_aux=False
 aux2=0
 aux3=0
-clock_5_sec = threading.Thread(args=())
-start_aux=False
 
 # Variável usada para conferência da mudança de hora para realização do backup
 hora_inicial = datetime.now()
@@ -161,7 +160,10 @@ class MyWin(QtWidgets.QMainWindow):
         return aba
 
     def teste_btn(self):
-        # valor=self.medicao_potencia()
+        serial_port.cancel_write()
+        serial_port.cancel_read()
+
+        self.action_5_seconds()
         self.ui.label_3.setText("Botão Pressionado")
 
     def sair(self):
@@ -2009,7 +2011,6 @@ class MyWin(QtWidgets.QMainWindow):
 
     def update_power_ar(self):
         global state_ar
-        global aux2
         self.power_off_ar()
         valor = self.ui.btn_power_ar.text()
         data_atual = datetime.now()
@@ -2044,8 +2045,7 @@ class MyWin(QtWidgets.QMainWindow):
                                (acao, valor, data_db))
             conexao.close()
 
-            if aux2==True:
-                self.action_5_seconds()
+
             # print("Thread Interrompida e Reiniciada")
             # clock_5_sec.start()
         # Caso a Conexão dê errado:
@@ -4733,11 +4733,13 @@ class MyWin(QtWidgets.QMainWindow):
     def action_1_second(self):
         self.minha_data()
 
+
         clock_1_sec = threading.Timer(1, self.action_1_second)
         clock_1_sec.start()
 
     def action_5_seconds(self):
         global state_banho
+        global aux2
 
         if state_banho == False:
             self.apresenta_parametros()
@@ -4747,10 +4749,12 @@ class MyWin(QtWidgets.QMainWindow):
 
         clock_5_sec = threading.Timer(5, self.action_5_seconds)
         clock_5_sec.start()
+        aux2=aux2+1
 
     def action_15_seconds(self):
         global auto_update_graph
-
+        global aux2
+        global aux3
         self.consumo_mensal()
 
         # Variavel para correção do BUG janela de data errada
@@ -4764,23 +4768,14 @@ class MyWin(QtWidgets.QMainWindow):
         clock_15_sec = threading.Timer(15, self.action_15_seconds)
         clock_15_sec.start()
 
-        # if aux2 == aux3 and aux == True:
-        #     print(clock_5_sec.is_alive())
-        #     print("Threading 5s foi interrompida....")
-        #     aux2=aux2+1
-        #     print("Passando 1")
-        #     #serial_port.sendBreak(duration = 0.02)
-        #     print("Passando 2")
-        #     print("Passando 3")
-        #     #serial_port.reset_input_buffer()
-        #     print("Passando 4")
-        #     #serial_port.reset_output_buffer()
-        #     # clock_5_sec = threading.Timer(1, self.action_5_seconds)
-        #     # clock_5_sec.start()
-        #     print("Passando 5")
-        #     self.action_5_seconds()
-        # else:
-        #     aux3 = aux2
+        if aux2 == aux3:
+            print("Thread 5s Fail")
+            serial_port.cancel_write()
+            serial_port.cancel_read()
+            print("Thread 5s Ok")
+            self.action_5_seconds()
+        else:
+            aux3 = aux2
 
     def action_5_minutes(self):
         self.agente_controle_tendencias()
