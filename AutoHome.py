@@ -60,7 +60,7 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
         self.setFixedSize(self.size())
         self.ui.figure2.setPixmap(QPixmap('images/figure2.png'))
-        self.ui.figure3.setPixmap(QPixmap('images/figure3.png'))
+
 
         # Apresenta Aba aberta
         print(self.get_tab())
@@ -1412,9 +1412,11 @@ class MyWin(QtWidgets.QMainWindow):
         state_banho = not state_banho
         if state_banho == True:
             self.ui.btn_ligar_banho.setText("Desligar Chuveiro")
+            self.ui.figure3.setPixmap(QPixmap('images/figure3.png'))
         else:
             self.banho_control(0)
             print("Chuveiro Desligado")
+            self.ui.figure3.setPixmap(QPixmap('images/figure3_2.png'))
             self.ui.btn_ligar_banho.setText("Ligar Chuveiro")
 
     def update_temp_banho_economic(self):
@@ -1775,6 +1777,17 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.exec_()
 
                 conexao.close()
+            elif int(self.ui.text_vol.text())==0:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
+
+                msg.setText(".::Error::.")
+                msg.setInformativeText("O Volume da televisão está no mínimo")
+                msg.setWindowTitle("Volume no Mínimo")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+
+                conexao.close()
             else:
                 self.vol_menos_tv()
                 valor = int(self.ui.text_vol.text()) - 1
@@ -1897,6 +1910,17 @@ class MyWin(QtWidgets.QMainWindow):
                 msg.setText(".::Error::.")
                 msg.setInformativeText("A Televisão se Encontra Desligada")
                 msg.setWindowTitle("TV Desligada")
+                msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                msg.exec_()
+
+                conexao.close()
+            elif int(self.ui.text_canal.text()) == 0:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
+
+                msg.setText(".::Error::.")
+                msg.setInformativeText("O Canal da televisão está no mínimo")
+                msg.setWindowTitle("Canal no Mínimo")
                 msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
                 msg.exec_()
 
@@ -2348,6 +2372,10 @@ class MyWin(QtWidgets.QMainWindow):
                     self.ui.text_modo_ar.setText("Turbo")
                 else:
                     self.ui.text_modo_ar.setText("Normal")
+                if self.ui.btn_ligar_banho.text()=="Ligar Chuveiro":
+                    self.ui.figure3.setPixmap(QPixmap('images/figure3_2.png'))
+                else:
+                    self.ui.figure3.setPixmap(QPixmap('images/figure3.png'))
             else:
                 print("Dados Insuficientes no Banco de Dados")
 
@@ -4037,10 +4065,10 @@ class MyWin(QtWidgets.QMainWindow):
     # Apresentação de Parâmetros na interface
     def apresenta_parametros(self):
         global presenca
-        # umidade, temperatura = self.agente_recepcao("temp_amb")
-        # lux = self.agente_recepcao("lux")
-        umidade, temperatura=self.temp_umid()
-        lux=self.luximetro()
+        umidade, temperatura = self.agente_recepcao("temp_amb")
+        lux = self.agente_recepcao("lux")
+        # umidade, temperatura=self.temp_umid()
+        # lux=self.luximetro()
         self.ui.txt_temp_amb.setText(temperatura + "ºC")
         self.ui.txt_umid.setText(umidade + "%")
         self.ui.txt_lux.setText(lux)
@@ -4772,6 +4800,10 @@ class MyWin(QtWidgets.QMainWindow):
             print("Thread 5s Fail")
             serial_port.cancel_write()
             serial_port.cancel_read()
+            serial_port.flushInput()
+            serial_port.flushOutput()
+            serial_port.reset_input_buffer()
+            serial_port.reset_output_buffer()
             print("Thread 5s Ok")
             self.action_5_seconds()
         else:
