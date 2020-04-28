@@ -19,6 +19,10 @@
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>images/icone2.jpg</normaloff>images/icone2.jpg</iconset>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QTabWidget" name="tabWidget">
     <property name="geometry">
@@ -35,7 +39,7 @@
      </font>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -1004,13 +1008,13 @@ qualquer ação de forma autônoma.</string>
       <property name="title">
        <string>AutoHome</string>
       </property>
-      <widget class="QLabel" name="figure_logo">
+      <widget class="QLabel" name="image1">
        <property name="geometry">
         <rect>
-         <x>120</x>
-         <y>80</y>
-         <width>400</width>
-         <height>200</height>
+         <x>0</x>
+         <y>20</y>
+         <width>621</width>
+         <height>321</height>
         </rect>
        </property>
        <property name="text">
@@ -1952,6 +1956,27 @@ qualquer ação de forma autônoma.</string>
       </property>
       <property name="text">
        <string>Modo Aprendizagem Ligado</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab_5">
+     <attribute name="title">
+      <string>Ajuda</string>
+     </attribute>
+     <widget class="QLabel" name="background">
+      <property name="geometry">
+       <rect>
+        <x>-10</x>
+        <y>0</y>
+        <width>1291</width>
+        <height>691</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Background</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>

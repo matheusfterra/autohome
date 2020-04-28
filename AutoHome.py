@@ -1,6 +1,7 @@
+import ctypes
 import threading
 from idlelib import window
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QIcon
 from info import Ui_InfoWindow
 from PyQt5.QtWidgets import QMainWindow, QLabel, QApplication, QWidget, QPushButton, QMessageBox
 from datetime import datetime, timedelta, date
@@ -60,7 +61,8 @@ class MyWin(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
         self.setFixedSize(self.size())
         self.ui.figure2.setPixmap(QPixmap('images/figure2.png'))
-
+        self.ui.image1.setPixmap(QPixmap('images/image1.jpg'))
+        self.ui.background.setPixmap(QPixmap('images/bg.jpg'))
 
         # Apresenta Aba aberta
         print(self.get_tab())
@@ -157,6 +159,8 @@ class MyWin(QtWidgets.QMainWindow):
             aba = 'Comandos'
         elif currentWidget == 3:
             aba = 'Aprendizagem'
+        elif currentWidget == 4:
+            aba = 'Ajuda'
         return aba
 
     def teste_btn(self):
@@ -4875,6 +4879,7 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     myapp = MyWin()
     myapp.setWindowTitle('AutoHome')
+
     myapp.show()
 
     qtRectangle = myapp.frameGeometry()
